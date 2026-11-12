@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Forensic Dashboard{% endblock %} | Network Forensics</title>
+  
+  <!-- Inter & Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <div class="app-container">
+    <!-- Persistent Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <i data-lucide="shield-alert"></i>
+        </div>
+        <div class="brand-text">
+          <h1>NET-FORENSIC</h1>
+          <span>Network Forensics</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Core Investigation</div>
+        
+        <a href="/overview" class="nav-item {% if active_page == 'overview' %}active{% endif %}">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Overview</span>
+        </a>
+
+        <a href="/live-traffic" class="nav-item {% if active_page == 'live_traffic' %}active{% endif %}">
+          <i data-lucide="radio"></i>
+          <span>Live Traffic</span>
+        </a>
+
+        <a href="/packet-analyzer" class="nav-item {% if active_page == 'packet_analyzer' %}active{% endif %}">
+          <i data-lucide="layers"></i>
+          <span>Packet Analyzer</span>
+        </a>
+
+        <a href="/incident-detection" class="nav-item {% if active_page == 'incident_detection' %}active{% endif %}">
+          <i data-lucide="alert-triangle"></i>
+          <span>Incident Detection</span>
+        </a>
+
+        <a href="/timeline" class="nav-item {% if active_page == 'timeline' %}active{% endif %}">
+          <i data-lucide="git-commit"></i>
+          <span>Investigation Timeline</span>
+        </a>
+
+        <div class="nav-section-title">Digital Evidence</div>
+
+        <a href="/evidence-vault" class="nav-item {% if active_page == 'evidence_vault' %}active{% endif %}">
+          <i data-lucide="database"></i>
+          <span>Evidence Vault</span>
+        </a>
+
+        <a href="/chain-of-custody" class="nav-item {% if active_page == 'chain_of_custody' %}active{% endif %}">
+          <i data-lucide="file-check"></i>
+          <span>Chain of Custody</span>
+        </a>
+
+        <div class="nav-section-title">Simulation & Reports</div>
+
+        <a href="/ns2-simulation" class="nav-item {% if active_page == 'ns2_simulation' %}active{% endif %}">
+          <i data-lucide="cpu"></i>
+          <span>NS-2 Simulation</span>
+        </a>
+
+        <a href="/reports" class="nav-item {% if active_page == 'reports' %}active{% endif %}">
+          <i data-lucide="file-text"></i>
+          <span>Forensic Reports</span>
+        </a>
+
+        <a href="/evaluation" class="nav-item {% if active_page == 'evaluation' %}active{% endif %}">
+          <i data-lucide="bar-chart-2"></i>
+          <span>Evaluation & Tests</span>
+        </a>
+
+        <div class="nav-section-title">System</div>
+
+        <a href="/settings" class="nav-item {% if active_page == 'settings' %}active{% endif %}">
+          <i data-lucide="settings"></i>
+          <span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div>Network Forensics Project</div>
+        <div class="team-tag">Networks Lab</div>
+      </div>
+    </aside>
+
+    <!-- Main Wrapper -->
+    <div class="main-wrapper">
+      <!-- Top Navigation -->
+      <header class="top-nav">
+        <div class="nav-left">
+          <div class="nav-breadcrumbs">
+            <span>System / </span>
+            <strong>{% block breadcrumb %}{{ active_page|replace('_', ' ')|title }}{% endblock %}</strong>
+          </div>
+        </div>
+
+        <div class="nav-right">
+          <!-- Capture Status Badge -->
+          <div class="status-badge" id="capture-status-badge" title="Live Capture Sniffing Engine">
+            <span class="status-indicator" id="capture-indicator"></span>
+            <span id="capture-status-text">CAPTURE IDLE</span>
+          </div>
+
+          <!-- System Status -->
+          <div class="status-badge" title="Automated Behavioral Rule Engine">
+            <span class="status-indicator active"></span>
+            <span>DETECTOR ACTIVE</span>
+          </div>
+
+          <!-- One-Click Demo Mode Trigger -->
+          <button class="btn btn-secondary btn-sm" onclick="seedDemoData()" title="Populates realistic multi-stage incident demonstration">
+            <i data-lucide="play-circle" style="width: 14px; height: 14px;"></i>
+            <span>Demo Mode</span>
+          </button>
+
+          <!-- System Clock -->
+          <div class="clock-display" id="system-clock">2026-11-11 00:00:00 UTC</div>
+
+          <!-- Analyst Profile -->
+          <div class="status-badge" style="background: var(--bg-surface-elevated); border-color: var(--border-light);">
+            <i data-lucide="user-check" style="width: 13px; height: 13px; color: var(--accent-emerald);"></i>
+            <span>MAIN</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Body -->
+      <main class="content-body">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

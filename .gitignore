@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+env/
+venv/
+
+# Forensic Data & Vault Run-time Artifacts
+# Note: Keep directory structures while ignoring transient dumps if needed
+data/uploads/*
+!data/uploads/.gitkeep
+data/evidence/*
+!data/evidence/.gitkeep
+data/reports/*
+!data/reports/.gitkeep
+data/forensic_db.sqlite*
+
+# NS-2 Simulation outputs
+*.tr
+*.nam
+!simulation/sample_traces/*.tr
+!simulation/tcl/*.tcl
+!simulation/awk/*.awk
+
+# OS metadata
+.DS_Store
+Thumbs.db

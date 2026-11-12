@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Live Traffic Capture & Generator{% endblock %}
+{% block breadcrumb %}Live Traffic{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Network Traffic Capture & Ingestion</h2>
+    <p>Acquire live network packets, ingest historical PCAP evidence, or execute controlled localhost socket simulations.</p>
+  </div>
+  <div>
+    {% if status.is_running %}
+      <button class="btn btn-danger" onclick="stopLiveCapture()">
+        <i data-lucide="square" style="width: 14px; height: 14px;"></i>
+        <span>Stop Active Capture</span>
+      </button>
+    {% else %}
+      <button class="btn btn-primary" onclick="openModal('startCaptureModal')">
+        <i data-lucide="play" style="width: 14px; height: 14px;"></i>
+        <span>Start Live Capture</span>
+      </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Three Traffic Sources Grid -->
+<div class="grid-3">
+  <!-- Source A: Live Network Sniffer -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="radio" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+        <span>Source A: Live Sniffing</span>
+      </h3>
+      {% if status.is_running %}
+        <span class="badge badge-critical">RECORDING</span>
+      {% else %}
+        <span class="badge badge-low">IDLE</span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+        Sniff raw ethernet/IP frames using Scapy across local network interfaces. Strictly extracts metadata headers; payloads are discarded.
+      </p>
+
+      {% if status.is_running %}
+        <div class="alert alert-danger" style="margin-bottom: 12px;">
+          <span class="status-indicator active"></span>
+          <div>
+            <strong>Active Session:</strong> {{ status.session_id }}<br/>
+            <span>Captured {{ status.packet_count }} packets ({{ status.duration_seconds }}s)</span>
+          </div>
+        </div>
+        <button class="btn btn-danger" style="width: 100%; justify-content: center;" onclick="stopLiveCapture()">
+          <i data-lucide="stop-circle" style="width: 14px; height: 14px;"></i>
+          <span>Halt Capture & Preserve to Vault</span>
+        </button>
+      {% else %}
+        <div class="form-group">
+          <label class="form-label">Available Interfaces</label>
+          <select class="form-control" id="capture-interface-select">
+            {% for iface in interfaces %}
+              <option value="{{ iface.scapy_name }}">{{ iface.display_name }} [{{ iface.speed }}]</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Max Packet Buffer Limit</label>
+          <input type="number" class="form-control" id="capture-limit-input" value="1000" min="50" max="10000">
+        </div>
+        <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="startLiveCapture()">
+          <i data-lucide="play" style="width: 14px; height: 14px;"></i>
+          <span>Initiate Scapy Capture</span>
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Source B: PCAP File Upload -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="upload-cloud" style="width: 16px; height: 16px; color: var(--severity-low);"></i>
+        <span>Source B: PCAP Artifact Upload</span>
+      </h3>
+    </div>
+    <div class="card-body">
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+        Ingest historical <code>.pcap</code> or <code>.pcapng</code> captures. Validates headers, archives in Evidence Vault, computes SHA-256, and executes detection.
+      </p>
+
+      <form id="pcapUploadForm" onsubmit="event.preventDefault(); uploadPCAPFile(this);">
+        <div class="form-group">
+          <label class="form-label">Select Capture File</label>
+          <input type="file" name="pcap_file" class="form-control" accept=".pcap,.pcapng" required>
+        </div>
+        <div class="alert alert-info" style="font-size: 11px; padding: 6px 10px;">
+          Max upload: 100 MB. Wireshark / TShark compatible.
+        </div>
+        <button type="submit" class="btn btn-secondary" style="width: 100%; justify-content: center;">
+          <i data-lucide="upload" style="width: 14px; height: 14px;"></i>
+          <span>Upload & Ingest Evidence</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Source C: Socket Traffic Generator -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="terminal" style="width: 16px; height: 16px; color: var(--severity-high);"></i>
+        <span>Source C: Socket Generator</span>
+      </h3>
+      <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald);">127.0.0.1 SAFE</span>
+    </div>
+    <div class="card-body">
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+        Controlled socket programs using Python standard library (TCP/UDP). Strictly restricted to loopback interface for viva demonstration.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button class="btn btn-secondary btn-sm" style="justify-content: space-between;" onclick="triggerSimulation('normal')">
+          <span>Normal HTTP/DNS Traffic</span>
+          <span class="badge badge-low">TCP/UDP</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" style="justify-content: space-between;" onclick="triggerSimulation('port_scan')">
+          <span>Port Scan (>20 ports in 5s)</span>
+          <span class="badge badge-medium">MEDIUM</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" style="justify-content: space-between;" onclick="triggerSimulation('syn_flood')">
+          <span>SYN Flood (>100 pps burst)</span>
+          <span class="badge badge-high">HIGH</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" style="justify-content: space-between;" onclick="triggerSimulation('brute_force')">
+          <span>Brute-force SSH Login (>10 reqs)</span>
+          <span class="badge badge-medium">MEDIUM</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" style="justify-content: space-between;" onclick="triggerSimulation('data_exfil')">
+          <span>Abnormal Data Exfil (>5x volume)</span>
+          <span class="badge badge-high">HIGH</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Capture Sessions Archive -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i data-lucide="history" style="width: 16px; height: 16px;"></i>
+      <span>Ingested Capture Sessions Archive</span>
+    </h3>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Session ID</th>
+          <th>Session Name</th>
+          <th>Source Type</th>
+          <th>Packets</th>
+          <th>Data Volume</th>
+          <th>Start Time</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if recent_sessions %}
+          {% for s in recent_sessions %}
+          <tr>
+            <td class="mono" style="color: var(--accent-emerald); font-weight: 600;">{{ s.id }}</td>
+            <td><strong>{{ s.session_name }}</strong></td>
+            <td>
+              <span class="badge" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-light); color: var(--text-muted);">
+                {{ s.source_type|upper }}
+              </span>
+              {% if s.is_demo %}
+                <span class="badge badge-demo" style="font-size: 8px;">DEMO</span>
+              {% endif %}
+            </td>
+            <td class="mono">{{ "{:,}".format(s.packet_count) }}</td>
+            <td class="mono">{{ "{:,.1f}".format(s.byte_count / 1024) }} KB</td>
+            <td class="mono" style="color: var(--text-dim);">{{ s.start_time }}</td>
+            <td>
+              {% if s.status == 'completed' %}
+                <span class="badge badge-verified">COMPLETED</span>
+              {% elif s.status == 'running' %}
+                <span class="badge badge-critical">RUNNING</span>
+              {% else %}
+                <span class="badge badge-low">{{ s.status|upper }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="/packet-analyzer?session_id={{ s.id }}" class="btn btn-secondary btn-sm" title="Analyze Packets">
+                <i data-lucide="search" style="width: 12px; height: 12px;"></i>
+                <span>Inspect</span>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="8" class="empty-state">No capture sessions recorded.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Start Capture -->
+<div class="modal-overlay" id="startCaptureModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h4>Initiate Live Packet Sniffing</h4>
+      <button class="btn btn-secondary btn-sm" data-close-modal="startCaptureModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Network Interface</label>
+        <select class="form-control" id="modal-iface-select">
+          {% for iface in interfaces %}
+            <option value="{{ iface.scapy_name }}">{{ iface.display_name }} ({{ iface.speed }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Packet Threshold Limit</label>
+        <input type="number" class="form-control" id="modal-limit-input" value="1000" min="50" max="5000">
+      </div>
+      <div class="alert alert-info">
+        Packets are buffered concurrently. When capture stops, the stream is automatically saved as an evidence artifact and hashed with SHA-256.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal="startCaptureModal">Cancel</button>
+      <button class="btn btn-primary" onclick="
+        document.getElementById('capture-interface-select').value = document.getElementById('modal-iface-select').value;
+        document.getElementById('capture-limit-input').value = document.getElementById('modal-limit-input').value;
+        closeModal('startCaptureModal');
+        startLiveCapture();
+      ">Start Sniffing</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

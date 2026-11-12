@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Cybersecurity Overview Dashboard{% endblock %}
+{% block breadcrumb %}Overview{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Network Incident Investigation Dashboard</h2>
+    <p>Real-time network telemetry, automated behavioral intrusion detection, and digital evidence status.</p>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="/live-traffic" class="btn btn-primary btn-sm">
+      <i data-lucide="radio" style="width: 14px; height: 14px;"></i>
+      <span>Capture Traffic</span>
+    </a>
+    <a href="/reports" class="btn btn-secondary btn-sm">
+      <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+      <span>Forensic Reports</span>
+    </a>
+  </div>
+</div>
+
+<!-- Stat Cards Grid -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-label">
+      <span>Total Packets</span>
+      <i data-lucide="layers" style="width: 14px; height: 14px;"></i>
+    </div>
+    <div class="stat-value">{{ "{:,}".format(stats.total_packets) }}</div>
+    <div class="stat-sub">{{ "{:,.1f}".format(stats.total_bytes / 1024) }} KB volume</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">
+      <span>Active Flows</span>
+      <i data-lucide="shuffle" style="width: 14px; height: 14px;"></i>
+    </div>
+    <div class="stat-value">{{ "{:,}".format(stats.total_connections) }}</div>
+    <div class="stat-sub">Unique IP-Port pairs</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">
+      <span>Total Incidents</span>
+      <i data-lucide="shield-alert" style="width: 14px; height: 14px; color: var(--severity-critical);"></i>
+    </div>
+    <div class="stat-value">{{ stats.total_incidents }}</div>
+    <div class="stat-sub">Automated detections</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">
+      <span>Critical Severity</span>
+      <span class="badge badge-critical" style="font-size: 9px;">CRIT</span>
+    </div>
+    <div class="stat-value" style="color: var(--severity-critical);">{{ stats.critical_incidents }}</div>
+    <div class="stat-sub">Immediate action required</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">
+      <span>High Severity</span>
+      <span class="badge badge-high" style="font-size: 9px;">HIGH</span>
+    </div>
+    <div class="stat-value" style="color: var(--severity-high);">{{ stats.high_incidents }}</div>
+    <div class="stat-sub">SYN flood / Exfil</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">
+      <span>Medium Severity</span>
+      <span class="badge badge-medium" style="font-size: 9px;">MED</span>
+    </div>
+    <div class="stat-value" style="color: var(--severity-medium);">{{ stats.medium_incidents }}</div>
+    <div class="stat-sub">Scans / Brute force</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">
+      <span>Evidence Preserved</span>
+      <i data-lucide="lock" style="width: 14px; height: 14px; color: var(--accent-emerald);"></i>
+    </div>
+    <div class="stat-value" style="color: var(--accent-emerald);">{{ stats.evidence_files }}</div>
+    <div class="stat-sub">SHA-256 Vault Artifacts</div>
+  </div>
+</div>
+
+<!-- Graphs Grid -->
+<div class="grid-7-3">
+  <!-- Traffic Activity Time Series -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="activity" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+        <span>Traffic Activity Timeline (Packets/sec & Protocol Volume)</span>
+      </h3>
+      <span style="font-size: 11px; color: var(--text-dim);">Live Aggregation</span>
+    </div>
+    <div class="card-body">
+      <div style="height: 240px; position: relative;">
+        <canvas id="trafficActivityCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Incident Distribution Donut -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="pie-chart" style="width: 16px; height: 16px; color: var(--severity-high);"></i>
+        <span>Incident Distribution</span>
+      </h3>
+    </div>
+    <div class="card-body">
+      <div style="height: 240px; position: relative;">
+        <canvas id="incidentDistributionCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Security Incidents Table -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i data-lucide="alert-circle" style="width: 16px; height: 16px; color: var(--severity-critical);"></i>
+      <span>Recent Correlated Security Incidents</span>
+    </h3>
+    <a href="/incident-detection" class="btn btn-secondary btn-sm">View All Incidents</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Incident ID</th>
+          <th>Type</th>
+          <th>Source Host</th>
+          <th>Target Host</th>
+          <th>Severity</th>
+          <th>Detection Timestamp</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if recent_incidents %}
+          {% for inc in recent_incidents %}
+          <tr>
+            <td>
+              <a href="/timeline?incident_id={{ inc.id }}" class="mono" style="color: var(--accent-emerald); text-decoration: none; font-weight: 600;">
+                {{ inc.id }}
+              </a>
+              {% if inc.is_demo %}
+                <span class="badge badge-demo" style="font-size: 8px; margin-left: 4px;">DEMO</span>
+              {% endif %}
+            </td>
+            <td><strong>{{ inc.incident_type|replace('_', ' ') }}</strong></td>
+            <td class="mono">{{ inc.src_ip }}</td>
+            <td class="mono">{{ inc.dst_ip }}</td>
+            <td>
+              {% if inc.severity == 'CRITICAL' %}
+                <span class="badge badge-critical">CRITICAL</span>
+              {% elif inc.severity == 'HIGH' %}
+                <span class="badge badge-high">HIGH</span>
+              {% elif inc.severity == 'MEDIUM' %}
+                <span class="badge badge-medium">MEDIUM</span>
+              {% else %}
+                <span class="badge badge-low">LOW</span>
+              {% endif %}
+            </td>
+            <td class="mono" style="color: var(--text-muted);">{{ inc.detected_at }}</td>
+            <td>
+              <span class="badge" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-light); color: var(--text-main);">
+                {{ inc.status }}
+              </span>
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <a href="/timeline?incident_id={{ inc.id }}" class="btn btn-secondary btn-sm" title="View Correlated Timeline">
+                  <i data-lucide="git-commit" style="width: 12px; height: 12px;"></i>
+                </a>
+                <button class="btn btn-primary btn-sm" onclick="generateForensicReport('{{ inc.id }}')" title="Compile Official PDF Forensic Report">
+                  <i data-lucide="file-text" style="width: 12px; height: 12px;"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <i data-lucide="shield-check"></i>
+                <h4>No Incidents Detected Yet</h4>
+                <p>Start a live capture session or click "Demo Mode" in the top bar to synthesize multi-stage attack scenarios.</p>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Network Overview: Top Hosts & Ports -->
+<div class="grid-2">
+  <!-- Top Hosts -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="server" style="width: 16px; height: 16px;"></i>
+        <span>Top Communicating Network Hosts</span>
+      </h3>
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Host IP Address</th>
+            <th>Packet Volume</th>
+            <th>Traffic Volume</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if top_hosts %}
+            {% for h in top_hosts %}
+            <tr>
+              <td class="mono" style="font-weight: 600;">{{ h.host_ip }}</td>
+              <td class="mono">{{ "{:,}".format(h.total_packets) }} pkts</td>
+              <td class="mono">{{ "{:,.1f}".format(h.total_bytes / 1024) }} KB</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="3" class="empty-state" style="padding: 15px;">No host traffic recorded.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Top Ports -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="cpu" style="width: 16px; height: 16px;"></i>
+        <span>Frequently Targeted Services & Ports</span>
+      </h3>
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Port Number</th>
+            <th>Protocol</th>
+            <th>Hit Frequency</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if top_ports %}
+            {% for p in top_ports %}
+            <tr>
+              <td class="mono" style="font-weight: 600; color: var(--accent-emerald);">Port {{ p.port }}</td>
+              <td><span class="badge badge-low">{{ p.protocol }}</span></td>
+              <td class="mono">{{ "{:,}".format(p.count) }} connections</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="3" class="empty-state" style="padding: 15px;">No port activity recorded.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  // Load Traffic Activity Graph
+  try {
+    const timelineData = await API.get("/api/stats/activity-timeline");
+    Charts.createTrafficActivityChart("trafficActivityCanvas", timelineData);
+  } catch (e) {
+    console.error("Failed to load traffic activity chart:", e);
+  }
+
+  // Load Incident Distribution Donut
+  try {
+    const incidentCounts = await API.get("/api/stats/incident-distribution");
+    Charts.createIncidentDistributionChart("incidentDistributionCanvas", incidentCounts);
+  } catch (e) {
+    console.error("Failed to load incident distribution chart:", e);
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Packet Analyzer & Inspection{% endblock %}
+{% block breadcrumb %}Packet Analyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Network Packet Metadata Analyzer</h2>
+    <p>Search, filter, and inspect captured packet headers. Payload data is strictly omitted per digital forensic privacy standards.</p>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn btn-secondary btn-sm" onclick="applyPacketFilters()">
+      <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+      <span>Refresh Filter</span>
+    </button>
+  </div>
+</div>
+
+<!-- Search & Filtering Bar -->
+<div class="card" style="margin-bottom: 16px;">
+  <div class="card-body" style="padding: 12px 16px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) 120px; gap: 10px; align-items: flex-end;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Session</label>
+        <select class="form-control" id="filter-session">
+          <option value="">All Sessions</option>
+          {% for s in sessions %}
+            <option value="{{ s.id }}">{{ s.session_name[:25] }} ({{ s.id }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Protocol</label>
+        <select class="form-control" id="filter-protocol">
+          <option value="">All Protocols</option>
+          {% for p in protocols %}
+            <option value="{{ p }}">{{ p }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Source IP</label>
+        <input type="text" class="form-control" id="filter-src-ip" placeholder="e.g. 192.168.">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Destination IP</label>
+        <input type="text" class="form-control" id="filter-dst-ip" placeholder="e.g. 10.0.">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Port</label>
+        <input type="number" class="form-control" id="filter-port" placeholder="e.g. 80, 443">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0; display: flex; align-items: center; gap: 6px; padding-bottom: 6px;">
+        <input type="checkbox" id="filter-suspicious" style="cursor: pointer;">
+        <label for="filter-suspicious" class="form-label" style="margin-bottom: 0; cursor: pointer; text-transform: none;">Suspicious</label>
+      </div>
+
+      <div>
+        <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="applyPacketFilters()">
+          <i data-lucide="filter" style="width: 13px; height: 13px;"></i>
+          <span>Filter</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Packet Table -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i data-lucide="list" style="width: 16px; height: 16px;"></i>
+      <span>Captured Header Metadata Stream</span>
+    </h3>
+    <span id="packet-count-badge" class="badge" style="background: var(--bg-surface); border: 1px solid var(--border-light); color: var(--text-muted);">
+      Loading...
+    </span>
+  </div>
+  <div class="table-responsive">
+    <table class="table" id="packets-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Timestamp</th>
+          <th>Source Host</th>
+          <th>Destination Host</th>
+          <th>Protocol</th>
+          <th>Size</th>
+          <th>TCP Flags</th>
+          <th>Flags / Status</th>
+          <th>Inspect</th>
+        </tr>
+      </thead>
+      <tbody id="packets-table-body">
+        <tr><td colspan="9" class="empty-state">Loading packet stream...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- Pagination Controls -->
+  <div class="card-footer" style="padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); background: var(--bg-surface-elevated);">
+    <div style="font-size: 11px; color: var(--text-dim);" id="pagination-info">Showing page 1</div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-secondary btn-sm" id="prev-page-btn" onclick="changePacketPage(-1)">Previous</button>
+      <button class="btn btn-secondary btn-sm" id="next-page-btn" onclick="changePacketPage(1)">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Packet Header Inspector -->
+<div class="modal-overlay" id="packetInspectModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h4>Packet Header Forensic Inspection</h4>
+      <button class="btn btn-secondary btn-sm" data-close-modal="packetInspectModal">&times;</button>
+    </div>
+    <div class="modal-body" id="packet-inspect-body">
+      Loading packet details...
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal="packetInspectModal">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPacketPage = 1;
+const packetLimit = 40;
+
+async function loadPackets() {
+  const session = document.getElementById("filter-session").value;
+  const protocol = document.getElementById("filter-protocol").value;
+  const src = document.getElementById("filter-src-ip").value;
+  const dst = document.getElementById("filter-dst-ip").value;
+  const port = document.getElementById("filter-port").value;
+  const suspicious = document.getElementById("filter-suspicious").checked ? "1" : "0";
+
+  const params = new URLSearchParams({
+    page: currentPacketPage,
+    limit: packetLimit,
+    session_id: session,
+    protocol: protocol,
+    src_ip: src,
+    dst_ip: dst,
+    port: port,
+    suspicious: suspicious
+  });
+
+  const tbody = document.getElementById("packets-table-body");
+  const countBadge = document.getElementById("packet-count-badge");
+  const pagInfo = document.getElementById("pagination-info");
+
+  try {
+    const data = await API.get(`/api/packets?${params.toString()}`);
+    countBadge.innerText = `${data.total.toLocaleString()} Packets Found`;
+    pagInfo.innerText = `Page ${data.page} of ${Math.max(1, Math.ceil(data.total / packetLimit))} (${data.total.toLocaleString()} total)`;
+
+    document.getElementById("prev-page-btn").disabled = (currentPacketPage <= 1);
+    document.getElementById("next-page-btn").disabled = (currentPacketPage * packetLimit >= data.total);
+
+    if (!data.packets || data.packets.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-state"><h4>No Packets Match Query</h4><p>Adjust your filter parameters or capture additional traffic.</p></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.packets.map(p => `
+      <tr>
+        <td class="mono" style="color: var(--text-dim);">${p.id}</td>
+        <td class="mono" style="font-size: 11px;">${p.datetime_str}</td>
+        <td class="mono"><strong>${p.src_ip}</strong>${p.src_port ? `:${p.src_port}` : ''}</td>
+        <td class="mono"><strong>${p.dst_ip}</strong>${p.dst_port ? `:${p.dst_port}` : ''}</td>
+        <td><span class="badge ${p.protocol === 'TCP' ? 'badge-low' : p.protocol === 'UDP' ? 'badge-medium' : 'badge-verified'}">${p.protocol}</span></td>
+        <td class="mono">${p.packet_size} B</td>
+        <td class="mono" style="color: ${p.tcp_flags && p.tcp_flags.includes('SYN') ? '#fca5a5' : 'var(--text-muted)'}; font-size: 10px;">
+          ${p.tcp_flags || '-'}
+        </td>
+        <td>
+          ${p.is_suspicious ? `<span class="badge badge-critical">SUSPICIOUS</span>` : `<span class="badge badge-verified" style="opacity: 0.8;">NORMAL</span>`}
+          ${p.is_demo ? `<span class="badge badge-demo" style="font-size: 8px;">DEMO</span>` : ''}
+        </td>
+        <td>
+          <button class="btn btn-secondary btn-sm" onclick="inspectPacketDetail(${p.id})">
+            <i data-lucide="eye" style="width: 12px; height: 12px;"></i>
+          </button>
+        </td>
+      </tr>
+    `).join("");
+
+    initLucideIcons();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-state">Error loading packet stream: ${err.message}</td></tr>`;
+  }
+}
+
+function applyPacketFilters() {
+  currentPacketPage = 1;
+  loadPackets();
+}
+
+function changePacketPage(delta) {
+  currentPacketPage = Math.max(1, currentPacketPage + delta);
+  loadPackets();
+}
+
+async function inspectPacketDetail(packetId) {
+  openModal("packetInspectModal");
+  const modalBody = document.getElementById("packet-inspect-body");
+  modalBody.innerHTML = `<div class="empty-state">Loading header dissection...</div>`;
+
+  try {
+    const pkt = await API.get(`/api/packets/${packetId}`);
+    modalBody.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; margin-bottom: 6px;">Layer 2: Data Link Header</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+            <div><span style="color: var(--text-muted);">Source MAC:</span> <code class="mono">${pkt.src_mac || 'N/A'}</code></div>
+            <div><span style="color: var(--text-muted);">Destination MAC:</span> <code class="mono">${pkt.dst_mac || 'N/A'}</code></div>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; margin-bottom: 6px;">Layer 3: Network Header (IPv4)</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+            <div><span style="color: var(--text-muted);">Source Address:</span> <code class="mono" style="font-weight: 600;">${pkt.src_ip}</code></div>
+            <div><span style="color: var(--text-muted);">Destination Address:</span> <code class="mono" style="font-weight: 600;">${pkt.dst_ip}</code></div>
+            <div><span style="color: var(--text-muted);">Protocol:</span> <code class="mono">${pkt.protocol}</code></div>
+            <div><span style="color: var(--text-muted);">Total Length:</span> <code class="mono">${pkt.packet_size} bytes</code></div>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; margin-bottom: 6px;">Layer 4: Transport Layer Header</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+            <div><span style="color: var(--text-muted);">Source Port:</span> <code class="mono">${pkt.src_port || 'N/A'}</code></div>
+            <div><span style="color: var(--text-muted);">Destination Port:</span> <code class="mono">${pkt.dst_port || 'N/A'}</code></div>
+            <div><span style="color: var(--text-muted);">TCP Control Flags:</span> <code class="mono" style="color: var(--accent-emerald);">${pkt.tcp_flags || 'N/A'}</code></div>
+            <div><span style="color: var(--text-muted);">Suspicious Flag:</span> <span class="badge ${pkt.is_suspicious ? 'badge-critical' : 'badge-verified'}">${pkt.is_suspicious ? 'FLAGGED' : 'NORMAL'}</span></div>
+          </div>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <div style="font-size: 11px; text-transform: uppercase; color: var(--text-dim); font-weight: 600; margin-bottom: 6px;">Header Summary & Metadata</div>
+          <pre class="mono" style="font-size: 11px; color: var(--text-main); white-space: pre-wrap; word-break: break-all; margin: 0;">${pkt.info || 'No extended header string'}</pre>
+        </div>
+
+        <div class="alert alert-info" style="font-size: 11px; margin-bottom: 0;">
+          <i data-lucide="info" style="width: 14px; height: 14px; flex-shrink: 0;"></i>
+          <span>Forensic Guarantee: Packet payload contents are strictly discarded at capture time to prevent leakage of credentials or sensitive data.</span>
+        </div>
+      </div>
+    `;
+    initLucideIcons();
+  } catch (err) {
+    modalBody.innerHTML = `<div class="alert alert-danger">Error fetching packet details: ${err.message}</div>`;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Check if session_id passed in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const sess = urlParams.get("session_id");
+  if (sess) {
+    const sSelect = document.getElementById("filter-session");
+    if (sSelect) sSelect.value = sess;
+  }
+  loadPackets();
+});
+</script>
+{% endblock %}

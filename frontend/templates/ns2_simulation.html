@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+
+{% block title %}NS-2 Network Simulation & AWK Processing{% endblock %}
+{% block breadcrumb %}NS-2 Simulation{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>NS-2 Network Simulation &amp; AWK Trace Processing</h2>
+    <p>Simulate baseline, flooding, and packet drop topologies using NS-2 TCL scripts. Analyze 12-column trace files using AWK and Python.</p>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn btn-secondary btn-sm" onclick="openModal('ubuntuGuideModal')">
+      <i data-lucide="terminal" style="width: 14px; height: 14px;"></i>
+      <span>Ubuntu NS-2 Guide</span>
+    </button>
+  </div>
+</div>
+
+<!-- Topology Visualization Card -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i data-lucide="share-2" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+      <span>Network Topology Visualization (4-Node Bottleneck Architecture)</span>
+    </h3>
+    <span class="badge" style="background: var(--bg-surface); border: 1px solid var(--border-light); color: var(--text-dim);">
+      NAM / TCL ARCHITECTURE
+    </span>
+  </div>
+  <div class="card-body" style="padding: 24px;">
+    <!-- SVG Interactive Topology Diagram -->
+    <div style="background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 24px; display: flex; justify-content: space-around; align-items: center; position: relative;">
+      
+      <!-- Node 0 -->
+      <div style="text-align: center; z-index: 2;">
+        <div style="width: 54px; height: 54px; border-radius: 50%; background: #1e293b; border: 2px solid #3b82f6; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; color: #93c5fd; font-weight: 700;" class="mono">
+          n0
+        </div>
+        <div style="font-weight: 600; font-size: 11px;">Client / Attacker</div>
+        <div style="font-size: 10px; color: var(--text-dim);">Src Node (CBR/FTP)</div>
+      </div>
+
+      <!-- Link n0 -> n1 -->
+      <div style="flex: 1; text-align: center; position: relative; padding: 0 10px;">
+        <div style="height: 2px; background: var(--border-light); width: 100%;"></div>
+        <div style="font-size: 9px; color: var(--text-dim); margin-top: 4px;" class="mono">10Mb, 10ms, DropTail</div>
+      </div>
+
+      <!-- Node 1 -->
+      <div style="text-align: center; z-index: 2;">
+        <div style="width: 54px; height: 54px; border-radius: 50%; background: #1e293b; border: 2px solid var(--accent-emerald); display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; color: var(--accent-emerald); font-weight: 700;" class="mono">
+          n1
+        </div>
+        <div style="font-weight: 600; font-size: 11px;">Ingress Gateway</div>
+        <div style="font-size: 10px; color: var(--text-dim);">DropTail Queue (20)</div>
+      </div>
+
+      <!-- Link n1 -> n2 (Bottleneck) -->
+      <div style="flex: 1; text-align: center; position: relative; padding: 0 10px;">
+        <div style="height: 3px; background: var(--severity-high); width: 100%;"></div>
+        <div style="font-size: 9px; color: var(--severity-high); font-weight: 600; margin-top: 4px;" class="mono">Bottleneck: 2Mb, 20ms</div>
+      </div>
+
+      <!-- Node 2 -->
+      <div style="text-align: center; z-index: 2;">
+        <div style="width: 54px; height: 54px; border-radius: 50%; background: #1e293b; border: 2px solid var(--accent-emerald); display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; color: var(--accent-emerald); font-weight: 700;" class="mono">
+          n2
+        </div>
+        <div style="font-weight: 600; font-size: 11px;">Egress Core Router</div>
+        <div style="font-size: 10px; color: var(--text-dim);">Queue Limit = 10</div>
+      </div>
+
+      <!-- Link n2 -> n3 -->
+      <div style="flex: 1; text-align: center; position: relative; padding: 0 10px;">
+        <div style="height: 2px; background: var(--border-light); width: 100%;"></div>
+        <div style="font-size: 9px; color: var(--text-dim); margin-top: 4px;" class="mono">10Mb, 10ms, DropTail</div>
+      </div>
+
+      <!-- Node 3 -->
+      <div style="text-align: center; z-index: 2;">
+        <div style="width: 54px; height: 54px; border-radius: 50%; background: #1e293b; border: 2px solid #8b5cf6; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; color: #c4b5fd; font-weight: 700;" class="mono">
+          n3
+        </div>
+        <div style="font-weight: 600; font-size: 11px;">Victim / Sink</div>
+        <div style="font-size: 10px; color: var(--text-dim);">TCPSink / Null</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Simulation Execution & Trace Ingestion Controls -->
+<div class="grid-2">
+  <!-- Run Built-in Scenarios -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="play-circle" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+        <span>Execute Pre-Configured Scenarios</span>
+      </h3>
+    </div>
+    <div class="card-body">
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+        Generate and evaluate standard 12-column NS-2 simulation traces across representative lab conditions:
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface-elevated); padding: 10px 14px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <div>
+            <div style="font-weight: 600; font-size: 12px;">Scenario 1: Baseline Traffic</div>
+            <div style="font-size: 11px; color: var(--text-dim);">CBR / FTP over 10Mb link (Low Loss, High PDR)</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="runNS2SimulationScenario('normal')">
+            <i data-lucide="play" style="width: 12px; height: 12px;"></i>
+            <span>Run &amp; Analyze</span>
+          </button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface-elevated); padding: 10px 14px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <div>
+            <div style="font-weight: 600; font-size: 12px; color: var(--severity-high);">Scenario 2: Flooding Attack</div>
+            <div style="font-size: 11px; color: var(--text-dim);">8Mbps CBR into 2Mbps bottleneck (High Buffer Drops)</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="runNS2SimulationScenario('flooding')">
+            <i data-lucide="zap" style="width: 12px; height: 12px;"></i>
+            <span>Run &amp; Analyze</span>
+          </button>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-surface-elevated); padding: 10px 14px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <div>
+            <div style="font-weight: 600; font-size: 12px; color: #c084fc;">Scenario 3: Packet Loss Model</div>
+            <div style="font-size: 11px; color: var(--text-dim);">12% uniform ErrorModel on link n1-n2</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="runNS2SimulationScenario('lossy')">
+            <i data-lucide="alert-octagon" style="width: 12px; height: 12px;"></i>
+            <span>Run &amp; Analyze</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Trace File Ingestion -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="upload" style="width: 16px; height: 16px; color: var(--severity-low);"></i>
+        <span>Upload Custom NS-2 Trace (.tr)</span>
+      </h3>
+    </div>
+    <div class="card-body">
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+        Upload an NS-2 trace file generated on Ubuntu or a university lab terminal. Parsed with AWK and Python.
+      </p>
+
+      <form id="ns2UploadForm" onsubmit="event.preventDefault(); uploadNS2Trace(this);">
+        <div class="form-group">
+          <label class="form-label">NS-2 Trace File (.tr)</label>
+          <input type="file" name="trace_file" class="form-control" accept=".tr,.txt" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+          <i data-lucide="cpu" style="width: 14px; height: 14px;"></i>
+          <span>Process Trace with AWK Engine</span>
+        </button>
+      </form>
+
+      <div style="display: flex; gap: 8px; margin-top: 14px;">
+        <button class="btn btn-secondary btn-sm" style="flex: 1; justify-content: center;" onclick="openModal('awkScriptModal')">
+          <i data-lucide="file-code" style="width: 12px; height: 12px;"></i>
+          <span>Inspect AWK Scripts</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Simulation Results Card -->
+<div class="card" id="simResultsContainer" style="display: none;">
+  <div class="card-header">
+    <h3>
+      <i data-lucide="bar-chart-2" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+      <span id="simResultScenarioName">Simulation Metrics &amp; AWK Analysis Output</span>
+    </h3>
+  </div>
+  <div class="card-body">
+    <!-- 4 Metric Cards -->
+    <div class="stat-grid" style="margin-bottom: 20px;">
+      <div class="stat-card">
+        <div class="stat-label">Throughput</div>
+        <div class="stat-value" id="val-throughput" style="color: var(--accent-emerald);">0.00 Kbps</div>
+        <div class="stat-sub">Aggregate delivered data rate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg End-to-End Delay</div>
+        <div class="stat-value" id="val-delay">0.00 ms</div>
+        <div class="stat-sub">Packet transit latency</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Packet Delivery Ratio (PDR)</div>
+        <div class="stat-value" id="val-pdr" style="color: #60a5fa;">0.00 %</div>
+        <div class="stat-sub">Packets received / sent</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Packet Loss Ratio</div>
+        <div class="stat-value" id="val-loss" style="color: var(--severity-critical);">0.00 %</div>
+        <div class="stat-sub">Dropped packets ('d' events)</div>
+      </div>
+    </div>
+
+    <!-- Throughput Time Series Graph -->
+    <div style="height: 220px; position: relative;">
+      <canvas id="ns2ThroughputCanvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ubuntu Execution Instructions -->
+<div class="modal-overlay" id="ubuntuGuideModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h4>How to Execute NS-2 on Ubuntu (JIIT Lab Instructions)</h4>
+      <button class="btn btn-secondary btn-sm" data-close-modal="ubuntuGuideModal">&times;</button>
+    </div>
+    <div class="modal-body" style="font-size: 12px; line-height: 1.6;">
+      <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle); margin-bottom: 12px;">
+        <strong>1. Install NS-2 and Network Animator (NAM):</strong>
+        <pre class="mono" style="background: #000; padding: 8px; border-radius: 4px; margin-top: 6px; color: var(--accent-emerald);">sudo apt update
+sudo apt install ns2 nam gawk</pre>
+      </div>
+
+      <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle); margin-bottom: 12px;">
+        <strong>2. Execute the TCL Simulation Script:</strong>
+        <pre class="mono" style="background: #000; padding: 8px; border-radius: 4px; margin-top: 6px; color: var(--accent-emerald);">cd simulation/tcl
+ns normal_traffic.tcl</pre>
+        <p style="color: var(--text-dim); margin-top: 4px;">This creates <code>normal_traffic.tr</code> (trace file) and <code>normal_traffic.nam</code>.</p>
+      </div>
+
+      <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+        <strong>3. Process Trace File with AWK:</strong>
+        <pre class="mono" style="background: #000; padding: 8px; border-radius: 4px; margin-top: 6px; color: var(--accent-emerald);">awk -f ../awk/throughput.awk normal_traffic.tr
+awk -f ../awk/pdr.awk normal_traffic.tr
+awk -f ../awk/loss.awk normal_traffic.tr</pre>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" data-close-modal="ubuntuGuideModal">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: AWK Script Viewer -->
+<div class="modal-overlay" id="awkScriptModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h4>AWK Processing Scripts</h4>
+      <button class="btn btn-secondary btn-sm" data-close-modal="awkScriptModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 8px;">throughput.awk</div>
+      <pre class="mono" style="background: #000; padding: 10px; border-radius: 4px; color: #a7f3d0; font-size: 11px; margin-bottom: 14px; max-height: 180px; overflow-y: auto;">
+BEGIN { received_bytes = 0; start_time = 1e9; end_time = 0; }
+{
+  event = $1; time = $2; pkt_size = $6;
+  if (event == "r" || event == "-") {
+    if (time < start_time) start_time = time;
+    if (time > end_time) end_time = time;
+  }
+  if (event == "r") received_bytes += pkt_size;
+}
+END {
+  duration = end_time - start_time;
+  if (duration > 0) printf("Throughput: %.2f Kbps\n", (received_bytes * 8) / (duration * 1000));
+}</pre>
+
+      <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 8px;">loss.awk</div>
+      <pre class="mono" style="background: #000; padding: 10px; border-radius: 4px; color: #fca5a5; font-size: 11px; max-height: 180px; overflow-y: auto;">
+BEGIN { sent = 0; dropped = 0; }
+{
+  event = $1;
+  if (event == "+") sent++;
+  if (event == "d") dropped++;
+}
+END {
+  if (sent > 0) printf("Packet Loss Ratio: %.2f %%\n", (dropped / sent) * 100);
+}</pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal="awkScriptModal">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let ns2ChartInstance = null;
+
+async function runNS2SimulationScenario(scenario) {
+  showToast(`Generating and analyzing ${scenario.toUpperCase()} NS-2 scenario...`, "info");
+  try {
+    const res = await API.post("/api/ns2/run-sample", { scenario: scenario });
+    if (res.success) {
+      displaySimulationResults(res.analysis);
+      showToast("NS-2 trace parsed successfully!", "success");
+    }
+  } catch (err) {
+    showToast(`Simulation error: ${err.message}`, "danger");
+  }
+}
+
+async function uploadNS2Trace(formEl) {
+  const formData = new FormData(formEl);
+  showToast("Processing uploaded NS-2 trace file...", "info");
+  try {
+    const res = await API.upload("/api/ns2/upload-trace", formData);
+    if (res.success) {
+      displaySimulationResults(res.analysis);
+      showToast("Uploaded trace processed successfully!", "success");
+    } else {
+      showToast(`Error: ${res.error}`, "danger");
+    }
+  } catch (err) {
+    showToast(`Upload error: ${err.message}`, "danger");
+  }
+}
+
+function displaySimulationResults(analysis) {
+  const container = document.getElementById("simResultsContainer");
+  container.style.display = "block";
+
+  document.getElementById("simResultScenarioName").innerText = `${analysis.scenario_name} (${analysis.total_packets.toLocaleString()} Trace Events)`;
+  document.getElementById("val-throughput").innerText = `${analysis.throughput_kbps.toLocaleString()} Kbps`;
+  document.getElementById("val-delay").innerText = `${analysis.avg_delay_ms} ms`;
+  document.getElementById("val-pdr").innerText = `${analysis.pdr_percent} %`;
+  document.getElementById("val-loss").innerText = `${analysis.packet_loss_ratio} %`;
+
+  // Render or update chart
+  if (ns2ChartInstance) {
+    ns2ChartInstance.destroy();
+  }
+
+  if (analysis.chart_data) {
+    ns2ChartInstance = Charts.createNS2ThroughputChart(
+      "ns2ThroughputCanvas",
+      analysis.chart_data.labels,
+      analysis.chart_data.throughput
+    );
+  }
+
+  container.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endblock %}

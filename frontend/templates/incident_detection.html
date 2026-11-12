@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+
+{% block title %}Automated Incident Detection{% endblock %}
+{% block breadcrumb %}Incident Detection{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Automated Behavioral Incident Detection</h2>
+    <p>Rule-based algorithmic intrusion detection engine with configurable thresholds, correlation state tracking, and deduplication.</p>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn btn-secondary btn-sm" onclick="openModal('ruleThresholdsModal')">
+      <i data-lucide="sliders" style="width: 14px; height: 14px;"></i>
+      <span>Inspect Rule Thresholds</span>
+    </button>
+  </div>
+</div>
+
+<!-- 4 Rule Cards Overview -->
+<div class="grid-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-bottom: 20px;">
+  <!-- Rule 1: Port Scan -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header" style="padding: 10px 14px;">
+      <h3 style="font-size: 12px;">
+        <i data-lucide="crosshair" style="width: 14px; height: 14px; color: var(--severity-medium);"></i>
+        <span>Rule A: Port Scan</span>
+      </h3>
+      <span class="badge badge-medium">MEDIUM</span>
+    </div>
+    <div class="card-body" style="padding: 12px; font-size: 11px;">
+      <div style="color: var(--text-muted); margin-bottom: 6px;">Condition:</div>
+      <div style="font-family: var(--font-mono); color: var(--text-main); margin-bottom: 8px;">
+        &gt; {{ settings.port_scan_threshold_ports or 20 }} unique ports / {{ settings.port_scan_window_seconds or 10 }}s
+      </div>
+      <div style="color: var(--text-dim);">Detects horizontal and vertical TCP/UDP port reconnaissance.</div>
+    </div>
+  </div>
+
+  <!-- Rule 2: SYN Flood -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header" style="padding: 10px 14px;">
+      <h3 style="font-size: 12px;">
+        <i data-lucide="zap" style="width: 14px; height: 14px; color: var(--severity-critical);"></i>
+        <span>Rule B: SYN Flood</span>
+      </h3>
+      <span class="badge badge-high">HIGH</span>
+    </div>
+    <div class="card-body" style="padding: 12px; font-size: 11px;">
+      <div style="color: var(--text-muted); margin-bottom: 6px;">Condition:</div>
+      <div style="font-family: var(--font-mono); color: var(--text-main); margin-bottom: 8px;">
+        &gt; {{ settings.syn_flood_threshold_pps or 100 }} SYN/s &amp; &lt; 10% handshake
+      </div>
+      <div style="color: var(--text-dim);">Detects half-open TCP denial-of-service volumetric surges.</div>
+    </div>
+  </div>
+
+  <!-- Rule 3: Brute Force -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header" style="padding: 10px 14px;">
+      <h3 style="font-size: 12px;">
+        <i data-lucide="key" style="width: 14px; height: 14px; color: var(--severity-medium);"></i>
+        <span>Rule C: Brute Force</span>
+      </h3>
+      <span class="badge badge-medium">MEDIUM</span>
+    </div>
+    <div class="card-body" style="padding: 12px; font-size: 11px;">
+      <div style="color: var(--text-muted); margin-bottom: 6px;">Condition:</div>
+      <div style="font-family: var(--font-mono); color: var(--text-main); margin-bottom: 8px;">
+        &gt; {{ settings.brute_force_threshold_attempts or 10 }} attempts / {{ settings.brute_force_window_seconds or 60 }}s
+      </div>
+      <div style="color: var(--text-dim);">Monitors repeated auth handshakes to SSH, FTP, RDP, HTTP.</div>
+    </div>
+  </div>
+
+  <!-- Rule 4: Data Exfil -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header" style="padding: 10px 14px;">
+      <h3 style="font-size: 12px;">
+        <i data-lucide="upload" style="width: 14px; height: 14px; color: var(--severity-high);"></i>
+        <span>Rule D: Data Exfil</span>
+      </h3>
+      <span class="badge badge-high">HIGH</span>
+    </div>
+    <div class="card-body" style="padding: 12px; font-size: 11px;">
+      <div style="color: var(--text-muted); margin-bottom: 6px;">Condition:</div>
+      <div style="font-family: var(--font-mono); color: var(--text-main); margin-bottom: 8px;">
+        Outbound vol &gt; {{ settings.data_exfil_multiplier or 5.0 }}x baseline
+      </div>
+      <div style="color: var(--text-dim);">Flags anomalous egress volume deviations over time window.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Incidents Master Table -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i data-lucide="shield-alert" style="width: 16px; height: 16px; color: var(--severity-critical);"></i>
+      <span>Detected Network Incident Records ({{ incidents|length }})</span>
+    </h3>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Incident ID</th>
+          <th>Type</th>
+          <th>Source Host</th>
+          <th>Destination Host</th>
+          <th>Target Service / Port</th>
+          <th>Severity</th>
+          <th>Detection Time</th>
+          <th>Status</th>
+          <th>Investigation Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if incidents %}
+          {% for inc in incidents %}
+          <tr>
+            <td>
+              <a href="/timeline?incident_id={{ inc.id }}" class="mono" style="color: var(--accent-emerald); font-weight: 700; text-decoration: none;">
+                {{ inc.id }}
+              </a>
+              {% if inc.is_demo %}
+                <span class="badge badge-demo" style="font-size: 8px; margin-left: 2px;">DEMO</span>
+              {% endif %}
+            </td>
+            <td>
+              <strong>{{ inc.incident_type|replace('_', ' ') }}</strong>
+              <div style="font-size: 11px; color: var(--text-dim); max-width: 240px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                {{ inc.title }}
+              </div>
+            </td>
+            <td class="mono" style="font-weight: 600;">{{ inc.src_ip }}</td>
+            <td class="mono" style="font-weight: 600;">{{ inc.dst_ip }}</td>
+            <td class="mono" style="color: var(--accent-emerald);">
+              {{ inc.target_ports or 'Multiple' }}
+            </td>
+            <td>
+              {% if inc.severity == 'CRITICAL' %}
+                <span class="badge badge-critical">CRITICAL</span>
+              {% elif inc.severity == 'HIGH' %}
+                <span class="badge badge-high">HIGH</span>
+              {% elif inc.severity == 'MEDIUM' %}
+                <span class="badge badge-medium">MEDIUM</span>
+              {% else %}
+                <span class="badge badge-low">LOW</span>
+              {% endif %}
+            </td>
+            <td class="mono" style="font-size: 11px; color: var(--text-muted);">{{ inc.detected_at }}</td>
+            <td>
+              <select class="form-control" style="padding: 2px 6px; font-size: 11px; width: 115px;" onchange="updateIncidentStatus('{{ inc.id }}', this.value)">
+                <option value="New" {% if inc.status == 'New' %}selected{% endif %}>New</option>
+                <option value="Investigating" {% if inc.status == 'Investigating' %}selected{% endif %}>Investigating</option>
+                <option value="Resolved" {% if inc.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+              </select>
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn btn-secondary btn-sm" onclick="openAddNoteModal('{{ inc.id }}')" title="Add Forensic Notes">
+                  <i data-lucide="message-square" style="width: 12px; height: 12px;"></i>
+                </button>
+                <a href="/timeline?incident_id={{ inc.id }}" class="btn btn-secondary btn-sm" title="Explore Incident Timeline">
+                  <i data-lucide="git-commit" style="width: 12px; height: 12px;"></i>
+                </a>
+                <button class="btn btn-primary btn-sm" onclick="generateForensicReport('{{ inc.id }}')" title="Download Forensic Report PDF">
+                  <i data-lucide="file-text" style="width: 12px; height: 12px;"></i>
+                  <span>Report</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9">
+              <div class="empty-state">
+                <i data-lucide="shield-check"></i>
+                <h4>No Incidents Recorded</h4>
+                <p>Run network traffic through the system or trigger Demo Mode to evaluate automated detections.</p>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Add Note -->
+<div class="modal-overlay" id="addNoteModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h4>Append Forensic Investigation Note</h4>
+      <button class="btn btn-secondary btn-sm" data-close-modal="addNoteModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="modal-incident-id">
+      <div class="form-group">
+        <label class="form-label">Analyst Name</label>
+        <input type="text" class="form-control" id="modal-note-author" value="Devesh (Member 2 - Lead Analyst)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Forensic Observation & Analysis Note</label>
+        <textarea class="form-control" id="modal-note-text" rows="4" placeholder="Enter detailed technical findings, corroborating packet IDs, or mitigation steps..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal="addNoteModal">Cancel</button>
+      <button class="btn btn-primary" onclick="submitInvestigationNote()">Save to Evidence Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Rule Thresholds Detail -->
+<div class="modal-overlay" id="ruleThresholdsModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h4>Detection Engine Configuration & Theoretical Bounds</h4>
+      <button class="btn btn-secondary btn-sm" data-close-modal="ruleThresholdsModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display: flex; flex-direction: column; gap: 14px; font-size: 12px;">
+        <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <strong style="color: var(--accent-emerald);">A. Port Scan Detection (RULE-01-PORT-SCAN)</strong>
+          <p style="color: var(--text-muted); margin-top: 4px;">
+            Triggers when a single source host addresses &gt; {{ settings.port_scan_threshold_ports or 20 }} unique destination ports within {{ settings.port_scan_window_seconds or 10 }} seconds.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <strong style="color: var(--severity-high);">B. TCP SYN Flood Detection (RULE-02-SYN-FLOOD)</strong>
+          <p style="color: var(--text-muted); margin-top: 4px;">
+            Triggers when incoming SYN traffic exceeds {{ settings.syn_flood_threshold_pps or 100 }} packets/second and the handshake completion ratio (ACK/SYN) remains below {{ (settings.syn_flood_ratio_threshold|float * 100)|round|int if settings.syn_flood_ratio_threshold else 10 }}%.
+            <br/><em>Academic Limitation Note: Incomplete PCAP traces without reverse path traffic will observe 0% handshakes; bidirectional monitoring is required for definitive estimation.</em>
+          </p>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <strong style="color: var(--severity-medium);">C. Brute-Force Login Detection (RULE-03-BRUTE-FORCE)</strong>
+          <p style="color: var(--text-muted); margin-top: 4px;">
+            Triggers when repeated connection attempts exceed {{ settings.brute_force_threshold_attempts or 10 }} times within {{ settings.brute_force_window_seconds or 60 }} seconds to monitored service ports (21, 22, 23, 80, 443, 3389).
+            <br/><em>Clarification: Monitors connection requests at the transport layer; credential verification requires application authentication logs.</em>
+          </p>
+        </div>
+
+        <div style="background: var(--bg-surface-elevated); padding: 12px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <strong style="color: var(--severity-high);">D. Data Exfiltration Detection (RULE-04-DATA-EXFILTRATION)</strong>
+          <p style="color: var(--text-muted); margin-top: 4px;">
+            Triggers when total outbound data volume from an internal host to an external target exceeds {{ settings.data_exfil_multiplier or 5.0 }}x the baseline volume within {{ settings.data_exfil_window_seconds or 300 }} seconds.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <a href="/settings" class="btn btn-secondary">Edit Thresholds in Settings</a>
+      <button class="btn btn-primary" data-close-modal="ruleThresholdsModal">Dismiss</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function updateIncidentStatus(incidentId, status) {
+  try {
+    const res = await API.post(`/api/incidents/${incidentId}/status`, { status: status, analyst: "Lead Forensic Examiner" });
+    if (res.success) {
+      showToast(`Incident ${incidentId} status updated to '${status}'`, "success");
+    }
+  } catch (err) {
+    showToast(`Error updating status: ${err.message}`, "danger");
+  }
+}
+
+function openAddNoteModal(incidentId) {
+  document.getElementById("modal-incident-id").value = incidentId;
+  document.getElementById("modal-note-text").value = "";
+  openModal("addNoteModal");
+}
+
+async function submitInvestigationNote() {
+  const incId = document.getElementById("modal-incident-id").value;
+  const author = document.getElementById("modal-note-author").value;
+  const note = document.getElementById("modal-note-text").value.trim();
+
+  if (!note) {
+    showToast("Please enter a note before saving.", "warning");
+    return;
+  }
+
+  try {
+    const res = await API.post(`/api/incidents/${incId}/notes`, { author: author, note_text: note });
+    if (res.success) {
+      showToast("Forensic note recorded and correlated in timeline.", "success");
+      closeModal("addNoteModal");
+      setTimeout(() => window.location.reload(), 1000);
+    }
+  } catch (err) {
+    showToast(`Error saving note: ${err.message}`, "danger");
+  }
+}
+</script>
+{% endblock %}

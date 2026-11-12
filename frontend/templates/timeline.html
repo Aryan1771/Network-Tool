@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Incident Investigation Timeline{% endblock %}
+{% block breadcrumb %}Investigation Timeline{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Correlated Forensic Incident Timeline</h2>
+    <p>Chronological reconstruction of security incidents, from initial packet contact to alert generation and forensic preservation.</p>
+  </div>
+  <div>
+    {% if selected_incident %}
+      <button class="btn btn-primary btn-sm" onclick="generateForensicReport('{{ selected_incident.id }}')">
+        <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+        <span>Download Official PDF Report</span>
+      </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Incident Selector Bar -->
+<div class="card" style="margin-bottom: 16px;">
+  <div class="card-body" style="padding: 12px 16px;">
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      <label class="form-label" style="margin-bottom: 0; min-width: 140px;">Select Target Incident:</label>
+      <select class="form-control" style="flex: 1; min-width: 280px;" onchange="window.location.href='/timeline?incident_id=' + this.value">
+        <option value="">-- All System Timeline Milestones --</option>
+        {% for inc in incidents %}
+          <option value="{{ inc.id }}" {% if inc.id == selected_incident_id %}selected{% endif %}>
+            [{{ inc.id }}] {{ inc.title }} ({{ inc.severity }})
+          </option>
+        {% endfor %}
+      </select>
+      {% if selected_incident_id %}
+        <a href="/timeline" class="btn btn-secondary btn-sm">Clear Filter</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="grid-7-3">
+  <!-- Left Column: Chronological Timeline Events -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="git-commit" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+        <span>Forensic Milestones &amp; Events</span>
+      </h3>
+      <span class="badge" style="background: var(--bg-surface); border: 1px solid var(--border-light); color: var(--text-muted);">
+        {{ events|length }} Milestones Logged
+      </span>
+    </div>
+    <div class="card-body">
+      {% if events %}
+        <div class="timeline-list">
+          {% for ev in events %}
+          <div class="timeline-item">
+            <div class="timeline-dot {% if ev.severity == 'CRITICAL' %}critical{% elif ev.severity == 'HIGH' %}high{% endif %}"></div>
+            <div class="timeline-content">
+              <div class="timeline-meta">
+                <span class="mono" style="font-weight: 600; color: var(--text-main);">{{ ev.datetime_str }}</span>
+                <div>
+                  <span class="badge {% if ev.event_type == 'ALERT_GENERATED' %}badge-critical{% elif ev.event_type == 'INITIATION' %}badge-low{% else %}badge-medium{% endif %}">
+                    {{ ev.event_type }}
+                  </span>
+                  {% if ev.severity %}
+                    <span class="badge {% if ev.severity == 'CRITICAL' %}badge-critical{% elif ev.severity == 'HIGH' %}badge-high{% elif ev.severity == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}" style="font-size: 8px;">
+                      {{ ev.severity }}
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 4px;">
+                {{ ev.summary }}
+              </div>
+
+              {% if ev.details %}
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 6px;">
+                  {{ ev.details }}
+                </div>
+              {% endif %}
+
+              <div style="display: flex; gap: 12px; font-size: 11px; color: var(--text-dim);" class="mono">
+                {% if ev.src_ip %}<span>Src: {{ ev.src_ip }}</span>{% endif %}
+                {% if ev.dst_ip %}<span>Dst: {{ ev.dst_ip }}{% if ev.port %}:{{ ev.port }}{% endif %}</span>{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i data-lucide="calendar"></i>
+          <h4>No Timeline Events Found</h4>
+          <p>Select an incident from the dropdown or synthesize incidents via Demo Mode.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right Column: Incident Forensic Dossier -->
+  <div>
+    {% if selected_incident %}
+      <div class="card">
+        <div class="card-header">
+          <h3>
+            <i data-lucide="shield" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+            <span>Incident Dossier</span>
+          </h3>
+          <span class="badge {% if selected_incident.severity == 'CRITICAL' %}badge-critical{% elif selected_incident.severity == 'HIGH' %}badge-high{% else %}badge-medium{% endif %}">
+            {{ selected_incident.severity }}
+          </span>
+        </div>
+        <div class="card-body">
+          <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">
+            {{ selected_incident.title }}
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+            {{ selected_incident.description }}
+          </p>
+
+          <div style="background: var(--bg-surface-elevated); padding: 10px; border-radius: 4px; border: 1px solid var(--border-subtle); margin-bottom: 14px; font-size: 11px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: var(--text-dim);">Source IP:</span>
+              <span class="mono" style="font-weight: 600;">{{ selected_incident.src_ip }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: var(--text-dim);">Target IP:</span>
+              <span class="mono" style="font-weight: 600;">{{ selected_incident.dst_ip }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: var(--text-dim);">Ports:</span>
+              <span class="mono" style="color: var(--accent-emerald);">{{ selected_incident.target_ports or 'N/A' }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: var(--text-dim);">Protocol:</span>
+              <span class="mono">{{ selected_incident.protocol }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-dim);">Detection Rule:</span>
+              <span class="mono">{{ selected_incident.rule_name }}</span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="generateForensicReport('{{ selected_incident.id }}')">
+              <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+              <span>Compile Official PDF Report</span>
+            </button>
+            <a href="/evidence-vault" class="btn btn-secondary" style="width: 100%; justify-content: center;">
+              <i data-lucide="database" style="width: 14px; height: 14px;"></i>
+              <span>Verify Digital Evidence</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="card">
+        <div class="card-header">
+          <h3>
+            <i data-lucide="info" style="width: 16px; height: 16px;"></i>
+            <span>Forensic Timeline Guide</span>
+          </h3>
+        </div>
+        <div class="card-body" style="font-size: 12px; color: var(--text-muted); line-height: 1.5;">
+          <p style="margin-bottom: 10px;">
+            Digital forensics requires establishing a rigorous, chronologically intact timeline of anomalous network occurrences.
+          </p>
+          <p style="margin-bottom: 10px;">
+            Select any detected security incident using the dropdown above to filter strictly to that incident's initiation, packet surges, SOC alarms, and analyst actions.
+          </p>
+          <div class="alert alert-info" style="font-size: 11px; margin-bottom: 0;">
+            Every timeline milestone is preserved in SQLite and dynamically rendered onto official courtroom-ready PDF reports.
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

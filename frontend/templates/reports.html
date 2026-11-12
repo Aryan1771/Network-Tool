@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Forensic Reports{% endblock %}
+{% block breadcrumb %}Forensic Reports{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Digital Forensic Investigation Reports</h2>
+    <p>Generate, archive, and download audit-ready PDF forensic investigation reports adhering to academic and industry reporting guidelines.</p>
+  </div>
+  <div>
+    <button class="btn btn-primary btn-sm" onclick="openModal('newReportModal')">
+      <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+      <span>Generate New Report</span>
+    </button>
+  </div>
+</div>
+
+<!-- Previously Generated Reports Archive -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i data-lucide="file-text" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+      <span>Compiled Forensic Reports Archive ({{ reports|length }})</span>
+    </h3>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Report ID</th>
+          <th>Title &amp; Target Incident</th>
+          <th>Classification</th>
+          <th>Severity</th>
+          <th>Generated At</th>
+          <th>Examiner</th>
+          <th>File Size</th>
+          <th>SHA-256 Digest</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if reports %}
+          {% for r in reports %}
+          <tr>
+            <td class="mono" style="color: var(--accent-emerald); font-weight: 700;">{{ r.id }}</td>
+            <td>
+              <strong>{{ r.report_title }}</strong>
+              <div class="mono" style="font-size: 10px; color: var(--text-dim);">Target Incident: {{ r.incident_id }}</div>
+            </td>
+            <td><strong>{{ r.incident_type|replace('_', ' ') }}</strong></td>
+            <td>
+              {% if r.severity == 'CRITICAL' %}
+                <span class="badge badge-critical">CRITICAL</span>
+              {% elif r.severity == 'HIGH' %}
+                <span class="badge badge-high">HIGH</span>
+              {% elif r.severity == 'MEDIUM' %}
+                <span class="badge badge-medium">MEDIUM</span>
+              {% else %}
+                <span class="badge badge-low">LOW</span>
+              {% endif %}
+            </td>
+            <td class="mono" style="font-size: 11px; color: var(--text-dim);">{{ r.generated_at }}</td>
+            <td style="font-size: 11px;">{{ r.generated_by }}</td>
+            <td class="mono">{{ "{:,}".format(r.file_size_bytes) }} B</td>
+            <td>
+              <code class="mono" style="font-size: 10px; color: var(--text-muted);" title="{{ r.sha256_hash }}">
+                {{ r.sha256_hash[:16] }}...
+              </code>
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <a href="/api/reports/{{ r.id }}/download" class="btn btn-primary btn-sm" title="Download Official PDF Report">
+                  <i data-lucide="download" style="width: 12px; height: 12px;"></i>
+                  <span>PDF</span>
+                </a>
+                <a href="/timeline?incident_id={{ r.incident_id }}" class="btn btn-secondary btn-sm" title="View Correlated Timeline">
+                  <i data-lucide="git-commit" style="width: 12px; height: 12px;"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9">
+              <div class="empty-state">
+                <i data-lucide="file-text"></i>
+                <h4>No Forensic Reports Compiled Yet</h4>
+                <p>Click "Generate New Report" or click the report button next to any incident to compile an official PDF dossier.</p>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: Generate New Report -->
+<div class="modal-overlay" id="newReportModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h4>Compile Official Forensic Investigation Report</h4>
+      <button class="btn btn-secondary btn-sm" data-close-modal="newReportModal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Select Incident for Report Generation</label>
+        <select class="form-control" id="report-target-incident">
+          {% for inc in incidents %}
+            <option value="{{ inc.id }}">
+              [{{ inc.id }}] {{ inc.title }} ({{ inc.incident_type }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Lead Forensic Examiner</label>
+        <input type="text" class="form-control" id="report-examiner-name" value="Forensic Team JIIT (Lab 24B15CS313)">
+      </div>
+      <div class="alert alert-info" style="font-size: 11px;">
+        The report compiler will pull live database records for the selected incident, including metadata parameters, rule thresholds, correlated timeline milestones, evidence vault hashes, and the complete chain of custody.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close-modal="newReportModal">Cancel</button>
+      <button class="btn btn-primary" onclick="
+        const incId = document.getElementById('report-target-incident').value;
+        const exam = document.getElementById('report-examiner-name').value;
+        closeModal('newReportModal');
+        generateForensicReport(incId);
+      ">Compile PDF Report</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

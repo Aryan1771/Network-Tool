@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Digital Evidence Vault{% endblock %}
+{% block breadcrumb %}Evidence Vault{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Digital Evidence Vault (SHA-256 Cryptographic Preservation)</h2>
+    <p>Forensic storage repository adhering to ISO/IEC 27037 digital evidence preservation standards. Cryptographic checksum verification and tamper detection.</p>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <a href="/chain-of-custody" class="btn btn-secondary btn-sm">
+      <i data-lucide="file-check" style="width: 14px; height: 14px;"></i>
+      <span>Audit Chain of Custody</span>
+    </a>
+  </div>
+</div>
+
+<!-- Evidence Table -->
+<div class="card">
+  <div class="card-header">
+    <h3>
+      <i data-lucide="database" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+      <span>Secured Evidence Artifacts ({{ evidence_list|length }})</span>
+    </h3>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Evidence ID</th>
+          <th>Original File</th>
+          <th>Size</th>
+          <th>Acquisition Source</th>
+          <th>SHA-256 Cryptographic Hash</th>
+          <th>Integrity Status</th>
+          <th>Last Verified</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if evidence_list %}
+          {% for evd in evidence_list %}
+          <tr>
+            <td>
+              <span class="mono" style="font-weight: 700; color: var(--accent-emerald);">{{ evd.id }}</span>
+              {% if evd.is_readonly %}
+                <span title="File set to read-only" style="margin-left: 4px; color: var(--text-dim);"><i data-lucide="lock" style="width: 11px; height: 11px; display: inline;"></i></span>
+              {% endif %}
+            </td>
+            <td>
+              <strong>{{ evd.original_filename }}</strong>
+              <div class="mono" style="font-size: 10px; color: var(--text-dim);">{{ evd.stored_filename }}</div>
+            </td>
+            <td class="mono">{{ "{:,}".format(evd.file_size_bytes) }} B</td>
+            <td>
+              <span class="badge" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-light); color: var(--text-muted);">
+                {{ evd.source_type }}
+              </span>
+            </td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <code class="mono" style="font-size: 10px; color: var(--text-main); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ evd.sha256_hash }}">
+                  {{ evd.sha256_hash }}
+                </code>
+                <button class="btn btn-secondary btn-sm" style="padding: 2px 5px;" onclick="navigator.clipboard.writeText('{{ evd.sha256_hash }}'); showToast('SHA-256 hash copied to clipboard!', 'info');" title="Copy Full Hash">
+                  <i data-lucide="copy" style="width: 11px; height: 11px;"></i>
+                </button>
+              </div>
+            </td>
+            <td>
+              {% if evd.verification_status == 'VERIFIED' %}
+                <span class="badge badge-verified">
+                  <i data-lucide="check-circle" style="width: 10px; height: 10px; margin-right: 3px;"></i>
+                  VERIFIED
+                </span>
+              {% elif evd.verification_status == 'TAMPERED' %}
+                <span class="badge badge-tampered">
+                  <i data-lucide="alert-octagon" style="width: 10px; height: 10px; margin-right: 3px;"></i>
+                  TAMPER DETECTED
+                </span>
+              {% else %}
+                <span class="badge badge-low">{{ evd.verification_status }}</span>
+              {% endif %}
+            </td>
+            <td class="mono" style="font-size: 11px; color: var(--text-dim);">
+              {{ evd.last_verified_at }}
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <!-- Verify Integrity Button -->
+                <button class="btn btn-primary btn-sm" onclick="verifyEvidenceIntegrity('{{ evd.id }}')" title="Recalculate SHA-256 and Verify Against Baseline">
+                  <i data-lucide="check-check" style="width: 12px; height: 12px;"></i>
+                  <span>Verify</span>
+                </button>
+
+                <!-- Tamper Simulation Demo Tool -->
+                <button class="btn btn-danger btn-sm" onclick="simulateTampering('{{ evd.id }}')" title="Academic Demo: Alter 1 byte to trigger TAMPER DETECTED alert">
+                  <i data-lucide="slash" style="width: 12px; height: 12px;"></i>
+                  <span>Test Tamper</span>
+                </button>
+
+                <!-- Download Preserved File -->
+                <a href="/api/evidence/{{ evd.id }}/download" class="btn btn-secondary btn-sm" title="Download Preserved Evidence PCAP">
+                  <i data-lucide="download" style="width: 12px; height: 12px;"></i>
+                </a>
+
+                <!-- Chain of Custody Link -->
+                <a href="/chain-of-custody?evidence_id={{ evd.id }}" class="btn btn-secondary btn-sm" title="View Chain of Custody Logs">
+                  <i data-lucide="file-check" style="width: 12px; height: 12px;"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <i data-lucide="lock"></i>
+                <h4>Evidence Vault Empty</h4>
+                <p>Upload a PCAP capture or run a live capture session to automatically secure artifacts in the vault.</p>
+              </div>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Forensic Preservation Explanation -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="shield-check" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+        <span>Cryptographic Integrity Protocol (SHA-256)</span>
+      </h3>
+    </div>
+    <div class="card-body" style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
+      <p style="margin-bottom: 8px;">
+        To ensure strict digital forensic admissibility, all acquired network captures undergo automated cryptographic baseline generation immediately upon ingest.
+      </p>
+      <ul style="padding-left: 18px; margin-bottom: 8px;">
+        <li>Original files are duplicated into <code>data/evidence/</code> with unique ID timestamps.</li>
+        <li>Files are flagged with OS read-only permissions (<code>S_IREAD</code>).</li>
+        <li>SHA-256 cryptographic digest is computed across 64 KB streaming blocks.</li>
+        <li>Recalculating checksums verifies that not a single bit has been altered.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="alert-triangle" style="width: 16px; height: 16px; color: var(--severity-high);"></i>
+        <span>Tamper Demonstration (For Viva Evaluation)</span>
+      </h3>
+    </div>
+    <div class="card-body" style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
+      <p style="margin-bottom: 8px;">
+        The <strong>Test Tamper</strong> feature is an academic evaluation utility designed to demonstrate cryptographic integrity checking to lab examiners:
+      </p>
+      <ol style="padding-left: 18px; margin-bottom: 8px;">
+        <li>Injects a single byte modification into the stored evidence copy.</li>
+        <li>Immediately executes an automated SHA-256 recalculation.</li>
+        <li>Displays a prominent <strong>TAMPER DETECTED</strong> warning badge.</li>
+        <li>Logs an immutable <code>TAMPER_DETECTED</code> entry into the Chain of Custody audit trail.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+{% endblock %}

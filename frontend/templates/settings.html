@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings & Configuration{% endblock %}
+{% block breadcrumb %}Settings{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>System Configuration &amp; Rule Thresholds</h2>
+    <p>Manage detection sensitivity bounds, persistent storage directories, network capture parameters, and demo data lifecycle.</p>
+  </div>
+  <div>
+    <button class="btn btn-primary btn-sm" onclick="saveSystemSettings()">
+      <i data-lucide="save" style="width: 14px; height: 14px;"></i>
+      <span>Save Changes</span>
+    </button>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Left Column: Detection Threshold Parameters -->
+  <div class="card">
+    <div class="card-header">
+      <h3>
+        <i data-lucide="sliders" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+        <span>Algorithmic Detection Thresholds</span>
+      </h3>
+    </div>
+    <div class="card-body">
+      <form id="settingsForm">
+        <!-- Port Scan Thresholds -->
+        <div style="font-weight: 600; font-size: 12px; color: var(--accent-emerald); margin-bottom: 10px;">
+          1. Port Scan Detection (RULE-01-PORT-SCAN)
+        </div>
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Unique Ports Threshold</label>
+            <input type="number" class="form-control" name="port_scan_threshold_ports" value="{{ settings.port_scan_threshold_ports or 20 }}" min="5" max="1000">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Time Window (Seconds)</label>
+            <input type="number" class="form-control" name="port_scan_window_seconds" value="{{ settings.port_scan_window_seconds or 10 }}" min="1" max="60">
+          </div>
+        </div>
+
+        <!-- SYN Flood Thresholds -->
+        <div style="font-weight: 600; font-size: 12px; color: var(--severity-high); margin-bottom: 10px;">
+          2. TCP SYN Flood Detection (RULE-02-SYN-FLOOD)
+        </div>
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">SYN Packets/Sec Threshold</label>
+            <input type="number" class="form-control" name="syn_flood_threshold_pps" value="{{ settings.syn_flood_threshold_pps or 100 }}" min="10" max="5000">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Max Handshake Ratio (0-1.0)</label>
+            <input type="number" step="0.01" class="form-control" name="syn_flood_ratio_threshold" value="{{ settings.syn_flood_ratio_threshold or 0.10 }}" min="0.01" max="1.0">
+          </div>
+        </div>
+
+        <!-- Brute Force Thresholds -->
+        <div style="font-weight: 600; font-size: 12px; color: var(--severity-medium); margin-bottom: 10px;">
+          3. Brute-Force Login Detection (RULE-03-BRUTE-FORCE)
+        </div>
+        <div class="grid-2" style="margin-bottom: 16px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Connection Attempts Threshold</label>
+            <input type="number" class="form-control" name="brute_force_threshold_attempts" value="{{ settings.brute_force_threshold_attempts or 10 }}" min="3" max="100">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Time Window (Seconds)</label>
+            <input type="number" class="form-control" name="brute_force_window_seconds" value="{{ settings.brute_force_window_seconds or 60 }}" min="5" max="300">
+          </div>
+        </div>
+
+        <!-- Data Exfiltration Thresholds -->
+        <div style="font-weight: 600; font-size: 12px; color: var(--severity-high); margin-bottom: 10px;">
+          4. Data Exfiltration Detection (RULE-04-DATA-EXFILTRATION)
+        </div>
+        <div class="grid-2">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Baseline Multiplier (x)</label>
+            <input type="number" step="0.5" class="form-control" name="data_exfil_multiplier" value="{{ settings.data_exfil_multiplier or 5.0 }}" min="1.5" max="50.0">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Baseline Volume (Bytes)</label>
+            <input type="number" class="form-control" name="data_exfil_baseline_bytes" value="{{ settings.data_exfil_baseline_bytes or 50000 }}" min="1000" max="10000000">
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right Column: Storage Directories & Demonstration Controls -->
+  <div>
+    <!-- Storage & System Directories -->
+    <div class="card">
+      <div class="card-header">
+        <h3>
+          <i data-lucide="hard-drive" style="width: 16px; height: 16px; color: var(--accent-emerald);"></i>
+          <span>Forensic Storage Directories</span>
+        </h3>
+      </div>
+      <div class="card-body" style="font-size: 12px;">
+        <div style="margin-bottom: 12px;">
+          <div style="color: var(--text-dim); font-size: 11px;">SQLite Forensic Database</div>
+          <code class="mono" style="color: var(--text-main); word-break: break-all;">{{ db_path }}</code>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <div style="color: var(--text-dim); font-size: 11px;">Evidence Vault Directory (Read-Only)</div>
+          <code class="mono" style="color: var(--text-main); word-break: break-all;">{{ evidence_path }}</code>
+        </div>
+        <div>
+          <div style="color: var(--text-dim); font-size: 11px;">Forensic PDF Reports Directory</div>
+          <code class="mono" style="color: var(--text-main); word-break: break-all;">{{ reports_path }}</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo Data Management & Reset Function -->
+    <div class="card" style="border-color: rgba(239, 68, 68, 0.3);">
+      <div class="card-header" style="background: rgba(239, 68, 68, 0.08);">
+        <h3 style="color: #fca5a5;">
+          <i data-lucide="trash-2" style="width: 16px; height: 16px; color: var(--severity-critical);"></i>
+          <span>Demonstration Data Controls</span>
+        </h3>
+      </div>
+      <div class="card-body">
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+          Reset synthetic demonstration data. This will safely clear simulated attack packets and demo incidents while strictly preserving real physical evidence files and authentic chain-of-custody audit logs.
+        </p>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-secondary" onclick="seedDemoData()">
+            <i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i>
+            <span>Re-seed Demo Data</span>
+          </button>
+          <button class="btn btn-danger" onclick="clearDemoData()">
+            <i data-lucide="trash" style="width: 13px; height: 13px;"></i>
+            <span>Reset Demo Data</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveSystemSettings() {
+  const form = document.getElementById("settingsForm");
+  const formData = new FormData(form);
+  const payload = {};
+  formData.forEach((val, key) => { payload[key] = val; });
+
+  try {
+    const res = await API.post("/api/settings", payload);
+    if (res.success) {
+      showToast(res.message, "success");
+    }
+  } catch (err) {
+    showToast(`Error saving settings: ${err.message}`, "danger");
+  }
+}
+</script>
+{% endblock %}
