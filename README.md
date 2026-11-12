@@ -1,9 +1,5 @@
 # Network Incident Investigation and Automated Forensic System
 
-**Jaypee Institute of Information Technology (JIIT)**  
-**Department of Computer Science & Engineering**  
-**Computer Networks Lab (24B15CS313) — Academic Project 2026**
-
 ---
 
 ## 1. Project Overview
@@ -282,7 +278,7 @@ Follow these steps during project evaluation or laboratory demonstration:
 1. In the sidebar, click **Forensic Reports**.
 2. Locate any incident and click **PDF Download**.
 3. Open the downloaded PDF in your viewer.
-4. Review the professional document: JIIT lab headers, executive summary, detection thresholds, evidence SHA-256 digest, correlated timeline, and forensic signature attestation block.
+4. Review the professional document: lab headers, executive summary, detection thresholds, evidence SHA-256 digest, correlated timeline, and forensic signature attestation block.
 
 ### Step 5: NS-2 Simulation Trace Analysis
 1. In the sidebar, click **NS-2 Simulation**.
@@ -318,6 +314,3 @@ OK
 4. **Localhost Restriction:** All attack simulations are hardcoded to `127.0.0.1` and will never target external or public network entities.
 
 ---
-
-**Developed for the JIIT Computer Networks Lab (24B15CS313)**  
-*Department of Computer Science & Engineering, Jaypee Institute of Information Technology*
