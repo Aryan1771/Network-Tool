@@ -42,6 +42,28 @@ class WebsiteApiSmokeTests(unittest.TestCase):
             self.assertIn("total", payload)
             self.assertIsInstance(payload["packets"], list)
 
+    def test_configured_password_protects_pages_but_not_health(self):
+        original_password = app.config.get("APP_PASSWORD", "")
+        original_username = app.config.get("APP_USERNAME", "analyst")
+        app.config["APP_PASSWORD"] = "test-password"
+        app.config["APP_USERNAME"] = "test-user"
+        try:
+            with self.client.get("/") as response:
+                self.assertEqual(response.status_code, 401)
+                self.assertIn("WWW-Authenticate", response.headers)
+            with self.client.get("/", auth=("test-user", "test-password")) as response:
+                self.assertEqual(response.status_code, 200)
+            with self.client.post(
+                "/api/settings", json={}, auth=("test-user", "test-password"),
+                headers={"Origin": "https://attacker.example"}
+            ) as response:
+                self.assertEqual(response.status_code, 403)
+            with self.client.get("/health") as response:
+                self.assertEqual(response.status_code, 200)
+        finally:
+            app.config["APP_PASSWORD"] = original_password
+            app.config["APP_USERNAME"] = original_username
+
 
 if __name__ == "__main__":
     unittest.main()

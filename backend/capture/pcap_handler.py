@@ -1,4 +1,5 @@
 import os
+import uuid
 from pathlib import Path
 from datetime import datetime
 from scapy.all import rdpcap, PcapReader
@@ -62,28 +63,36 @@ class PCAPHandler:
         if not valid:
             raise ValueError(f"Invalid PCAP file: {msg}")
 
-        session_id = f"SES-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        session_id = f"SES-{datetime.now().strftime('%Y%m%d-%H%M%S-%f')}-{uuid.uuid4().hex[:8]}"
 
-        # 1. Preserve original file in Evidence Vault
-        evidence_record = EvidenceVaultService.preserve_evidence_file(
-            source_path=source_file_path,
-            original_filename=original_filename,
-            session_id=session_id,
-            collector="Forensic PCAP Ingestion Module",
-            source_type="PCAP Upload",
-            notes=f"Processed capture session {session_id}"
-        )
-        evidence_id = evidence_record["evidence_id"]
-
-        # 2. Register Capture Session
+        # Register the session before evidence: evidence.session_id has a
+        # foreign key to capture_sessions.id.
         execute_db("""
             INSERT INTO capture_sessions (
                 id, session_name, source_type, pcap_filename, status, is_demo
             ) VALUES (?, ?, ?, ?, ?, ?)
         """, (
             session_id, f"Upload: {original_filename}", "pcap",
-            evidence_record["stored_filename"], "completed", is_demo
+            original_filename, "completed", is_demo
         ))
+
+        # 1. Preserve original file in Evidence Vault
+        try:
+            evidence_record = EvidenceVaultService.preserve_evidence_file(
+                source_path=source_file_path,
+                original_filename=original_filename,
+                session_id=session_id,
+                collector="Forensic PCAP Ingestion Module",
+                source_type="PCAP Upload",
+                notes=f"Processed capture session {session_id}"
+            )
+        except Exception:
+            execute_db("DELETE FROM capture_sessions WHERE id = ?", (session_id,))
+            raise
+        evidence_id = evidence_record["evidence_id"]
+        execute_db("""
+            UPDATE capture_sessions SET pcap_filename = ? WHERE id = ?
+        """, (evidence_record["stored_filename"], session_id))
 
         # 3. Read and Parse Packets
         parsed_packet_list = []

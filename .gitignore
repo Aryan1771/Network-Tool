@@ -21,6 +21,7 @@ data/forensic_db.sqlite*
 *.tr
 *.nam
 !simulation/sample_traces/*.tr
+!tests/fixtures/ns2/*.tr
 !simulation/tcl/*.tcl
 !simulation/awk/*.awk
 

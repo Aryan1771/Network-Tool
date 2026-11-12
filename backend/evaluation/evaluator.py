@@ -451,7 +451,7 @@ class EvaluationFramework:
 
         # 7. Generate NS-2 Sample Traces
         from backend.simulation.ns2_parser import NS2TraceAnalyzer
-        sample_tr_path = Path(__file__).resolve().parent.parent.parent / "simulation" / "sample_traces" / "sample_simulation.tr"
+        sample_tr_path = Path(Config.UPLOADS_PATH) / "demo_sample_simulation.tr"
         NS2TraceAnalyzer.generate_sample_trace(sample_tr_path, scenario="flooding")
         NS2TraceAnalyzer.analyze_trace_file(sample_tr_path, scenario_name="Flooding Attack NS-2 Simulation")
 

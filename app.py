@@ -1,8 +1,11 @@
 import os
 import json
 import logging
+import hmac
+import uuid
 from pathlib import Path
-from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
+from urllib.parse import urlparse
+from flask import Flask, Response, render_template, request, jsonify, send_file, redirect, url_for
 from werkzeug.utils import secure_filename
 
 from backend.config import Config
@@ -27,6 +30,49 @@ app = Flask(
     static_folder="frontend/static"
 )
 app.config.from_object(Config)
+
+
+@app.before_request
+def require_configured_password():
+    """Require HTTP Basic authentication when a deployment password is set."""
+    if request.endpoint == "health" or not app.config.get("APP_PASSWORD"):
+        return None
+
+    credentials = request.authorization
+    username = app.config.get("APP_USERNAME", "analyst")
+    password = app.config["APP_PASSWORD"]
+    if (credentials is None
+            or not hmac.compare_digest(credentials.username or "", username)
+            or not hmac.compare_digest(credentials.password or "", password)):
+        return Response(
+            "Authentication required", 401,
+            {"WWW-Authenticate": 'Basic realm="Network Tool", charset="UTF-8"'}
+        )
+
+    if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        origin = request.headers.get("Origin")
+        if origin and urlparse(origin).netloc.casefold() != request.host.casefold():
+            return jsonify({"success": False, "error": "Cross-origin request rejected"}), 403
+    return None
+
+
+@app.after_request
+def set_security_headers(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    return response
+
+
+@app.get("/health")
+def health():
+    """Lightweight readiness endpoint for the hosting platform."""
+    try:
+        query_db("SELECT 1", one=True)
+        return jsonify({"status": "ok"}), 200
+    except Exception:
+        logger.exception("Health check failed")
+        return jsonify({"status": "unavailable"}), 503
 
 # Ensure DB initialized on startup
 with app.app_context():
@@ -265,7 +311,7 @@ def api_capture_upload():
     if not (original_filename.lower().endswith(".pcap") or original_filename.lower().endswith(".pcapng")):
         return jsonify({"success": False, "error": "Only .pcap and .pcapng files are supported"}), 400
 
-    temp_save_path = Path(Config.UPLOADS_PATH) / original_filename
+    temp_save_path = Path(Config.UPLOADS_PATH) / f"{uuid.uuid4().hex}_{original_filename}"
     file.save(temp_save_path)
 
     try:
@@ -274,6 +320,8 @@ def api_capture_upload():
     except Exception as e:
         logger.error(f"Error processing uploaded PCAP: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        temp_save_path.unlink(missing_ok=True)
 
 # --- Simulated Traffic APIs (Localhost restricted) ---
 @app.route("/api/simulation/traffic/normal", methods=["POST"])
@@ -514,7 +562,10 @@ def api_ns2_upload_trace():
         return jsonify({"success": False, "error": "No filename provided"}), 400
 
     safe_name = secure_filename(file.filename)
-    dest_path = Path(Config.UPLOADS_PATH) / safe_name
+    if not safe_name:
+        return jsonify({"success": False, "error": "Invalid trace filename"}), 400
+    dest_path = Path(Config.UPLOADS_PATH) / uuid.uuid4().hex / safe_name
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
     file.save(dest_path)
 
     try:
@@ -588,4 +639,8 @@ def api_save_settings():
     return jsonify({"success": True, "message": "Settings updated successfully"})
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(
+        host=os.environ.get("HOST", "127.0.0.1"),
+        port=int(os.environ.get("PORT", "5000")),
+        debug=app.config.get("DEBUG", False)
+    )

@@ -4,7 +4,7 @@ from pathlib import Path
 
 # Base Paths
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = Path(os.environ.get("DATA_DIR", BASE_DIR / "data")).expanduser().resolve()
 EVIDENCE_DIR = DATA_DIR / "evidence"
 REPORTS_DIR = DATA_DIR / "reports"
 UPLOADS_DIR = DATA_DIR / "uploads"
@@ -18,6 +18,9 @@ class Config:
     # Use the deployment secret when configured; otherwise create an unpredictable
     # process-local key so local startup never relies on a hardcoded secret.
     SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+    APP_USERNAME = os.environ.get("APP_USERNAME", "analyst")
+    APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
+    DEBUG = os.environ.get("FLASK_DEBUG", "false").strip().lower() in {"1", "true", "yes"}
     DATABASE_PATH = str(DB_PATH)
     EVIDENCE_PATH = str(EVIDENCE_DIR)
     REPORTS_PATH = str(REPORTS_DIR)

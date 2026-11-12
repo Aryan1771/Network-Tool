@@ -240,6 +240,25 @@ network-tool-project\
    ```
 4. Access the web dashboard at `http://127.0.0.1:5000`.
 
+### Deploying on Render
+
+The root `render.yaml` configures a Python web service with Gunicorn, a health
+check, HTTP Basic authentication, and a persistent disk for the SQLite database,
+uploaded evidence, and generated reports. The disk requires a paid Render web
+service; its size is set to 1 GB. Services with an attached disk run as a single
+instance, and redeploys briefly stop the current instance before replacing it.
+
+To deploy, push this repository to GitHub and create a new Blueprint in the
+Render Dashboard from the repository. During setup, provide a value for the
+`APP_PASSWORD` secret when prompted. Render generates `SECRET_KEY` for the
+service. Use the configured username (`analyst`) and chosen password to access
+the site. The `/health` endpoint is public for platform checks; other pages,
+assets, and APIs require authentication.
+
+Live interface capture may not be available on a hosted service because it
+depends on raw packet capture support from the host. PCAP uploads and the
+software-based NS-2 trace tools remain available.
+
 ---
 
 ## 8. Verification & Demonstration Guide
