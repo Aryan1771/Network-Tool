@@ -1,6 +1,5 @@
 /**
  * Forensic System Master Frontend Controller
- * JIIT Computer Networks Lab (24B15CS313)
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -191,7 +190,7 @@ async function verifyEvidenceIntegrity(evidenceId) {
 }
 
 async function simulateTampering(evidenceId) {
-  if (!confirm(`Demonstration Warning:\nThis will intentionally inject 1 altered byte into evidence file ${evidenceId} to demonstrate cryptographic tampering detection in the lab.\nProceed?`)) {
+  if (!confirm(`Demonstration Warning:\nThis will intentionally inject 1 altered byte into evidence file ${evidenceId} to demonstrate cryptographic tampering detection during local testing.\nProceed?`)) {
     return;
   }
 
@@ -212,7 +211,7 @@ async function simulateTampering(evidenceId) {
 async function generateForensicReport(incidentId) {
   showToast(`Generating official PDF forensic report for incident ${incidentId}...`, "info");
   try {
-    const res = await API.post(`/api/reports/generate/${incidentId}`, { examiner: "Lead Forensic Analyst (Team JIIT)" });
+    const res = await API.post(`/api/reports/generate/${incidentId}`, { examiner: "Forensic Analyst" });
     if (res.success) {
       showToast(`PDF Forensic Report generated successfully: ${res.report.filename}`, "success");
       setTimeout(() => window.location.href = "/reports", 1200);
@@ -228,7 +227,7 @@ async function generateForensicReport(incidentId) {
 // Demo Mode Control
 // -------------------------------------------------------------
 async function seedDemoData() {
-  showToast("Seeding comprehensive forensic lab demonstration scenarios...", "info");
+  showToast("Seeding comprehensive forensic demonstration scenarios...", "info");
   try {
     const res = await API.post("/api/demo/seed");
     if (res.success) {

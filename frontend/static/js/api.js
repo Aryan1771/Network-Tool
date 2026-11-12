@@ -1,6 +1,5 @@
 /**
  * Forensic System REST API Client
- * JIIT Computer Networks Lab (24B15CS313)
  */
 
 const API = {

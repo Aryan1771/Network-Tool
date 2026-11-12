@@ -10,16 +10,16 @@ The application runs entirely locally on a single machine without relying on ext
 
 ---
 
-## 2. Team Contributions (4 Members)
+## 2. System Components
 
-The architecture is structured modularly so that all four team members can demonstrate their individual engineering contributions during evaluation and technical viva:
+The architecture is organized into four technical subsystems:
 
-| Team Member | Subsystem Ownership | Core Technical Modules |
+| Subsystem | Focus | Core Technical Modules |
 | :--- | :--- | :--- |
-| **Member 1** | **Traffic Capture & Socket Programming** | `backend/capture/live_capture.py`<br/>`backend/capture/socket_traffic.py`<br/>`backend/capture/pcap_handler.py`<br/>Multithreaded sniffing, raw socket generators (normal TCP/UDP, SYN floods, port scans, brute-force bursts). |
-| **Member 2** | **Packet Analysis & Incident Detection** | `backend/analyzer/packet_parser.py`<br/>`backend/detector/rules.py`<br/>`backend/detector/detection_engine.py`<br/>`backend/detector/correlator.py`<br/>Metadata-only header dissection, 4 algorithmic detection rules, correlation windows, and deduplication logic. |
-| **Member 3** | **Digital Forensics & Evidence Integrity** | `backend/forensics/hasher.py`<br/>`backend/forensics/evidence_vault.py`<br/>`backend/forensics/chain_of_custody.py`<br/>`backend/forensics/report_generator.py`<br/>SHA-256 checksums, read-only evidence vaults, tamper detection, append-only custody logs, and ReportLab PDF compilation. |
-| **Member 4** | **SOC Dashboard & Network Simulation** | `backend/simulation/ns2_parser.py`<br/>`simulation/tcl/*` & `simulation/awk/*`<br/>`frontend/templates/*` & `frontend/static/*`<br/>Flask backend routing, Chart.js visualizations, NS-2 trace processing, topology mapping, and evaluation benchmark framework. |
+| **Traffic Capture** | **Traffic Capture & Socket Programming** | `backend/capture/live_capture.py`<br/>`backend/capture/socket_traffic.py`<br/>`backend/capture/pcap_handler.py`<br/>Multithreaded sniffing, raw socket generators (normal TCP/UDP, SYN floods, port scans, brute-force bursts). |
+| **Packet Analysis** | **Packet Analysis & Incident Detection** | `backend/analyzer/packet_parser.py`<br/>`backend/detector/rules.py`<br/>`backend/detector/detection_engine.py`<br/>`backend/detector/correlator.py`<br/>Metadata-only header dissection, 4 algorithmic detection rules, correlation windows, and deduplication logic. |
+| **Digital Forensics** | **Digital Forensics & Evidence Integrity** | `backend/forensics/hasher.py`<br/>`backend/forensics/evidence_vault.py`<br/>`backend/forensics/chain_of_custody.py`<br/>`backend/forensics/report_generator.py`<br/>SHA-256 checksums, read-only evidence vaults, tamper detection, append-only custody logs, and ReportLab PDF compilation. |
+| **Dashboard & Simulation** | **SOC Dashboard & Network Simulation** | `backend/simulation/ns2_parser.py`<br/>`simulation/tcl/*` & `simulation/awk/*`<br/>`frontend/templates/*` & `frontend/static/*`<br/>Flask backend routing, Chart.js visualizations, NS-2 trace processing, topology mapping, and evaluation benchmark framework. |
 
 ---
 
@@ -83,7 +83,7 @@ The architecture is structured modularly so that all four team members can demon
 ### B. TCP SYN Flood Detection (`RULE-02-SYN-FLOOD`)
 - **Condition:** Volumetric incoming SYN traffic exceeds **100 packets per second**, and the connection handshake completion ratio ($\frac{\text{ACK}}{\text{SYN}}$) is **below 10%**.
 - **Forensic Attributes:** Source IP, victim host, observed SYN/sec rate, handshake completion ratio, and severity **HIGH**.
-- *Academic Note:* Incomplete single-direction PCAP traces without reverse path captures naturally report 0% handshakes; bidirectional capture is required for complete handshake observation.
+- *Technical Note:* Incomplete single-direction PCAP traces without reverse path captures naturally report 0% handshakes; bidirectional capture is required for complete handshake observation.
 
 ### C. Brute-Force Login Detection (`RULE-03-BRUTE-FORCE`)
 - **Condition:** **More than 10 repeated connection attempts** targeting authentication service ports (e.g., 22 SSH, 21 FTP, 23 Telnet, 80/443 HTTP, 3389 RDP) within **60 seconds**.
@@ -128,7 +128,7 @@ The architecture is structured modularly so that all four team members can demon
 ## 6. Project Structure
 
 ```
-c:\Users\DEVESH\OneDrive\Desktop\CN_project\
+network-tool-project\
 ├── backend/
 │   ├── analyzer/
 │   │   ├── packet_parser.py       # Header metadata extraction (privacy-enforced)
@@ -209,7 +209,7 @@ c:\Users\DEVESH\OneDrive\Desktop\CN_project\
 ### Windows Setup
 1. Clone or extract the project directory:
    ```cmd
-   cd c:\Users\DEVESH\OneDrive\Desktop\CN_project
+   cd network-tool-project
    ```
 2. Install Python dependencies:
    ```cmd
@@ -242,14 +242,14 @@ c:\Users\DEVESH\OneDrive\Desktop\CN_project\
 
 ---
 
-## 8. Verification & Demonstration Guide (Viva Walkthrough)
+## 8. Verification & Demonstration Guide
 
-Follow these steps during project evaluation or laboratory demonstration:
+Use these steps to explore the system and its technical workflows:
 
 ### Step 1: Automated Ground-Truth Evaluation
 1. In the sidebar, click **Evaluation & Tests**.
 2. Click **Execute Benchmark Suite**.
-3. The system executes all 7 controlled laboratory scenarios:
+3. The system executes all 7 controlled test scenarios:
    - Normal Baseline Traffic (0 false positives)
    - Port Scan Detection (100% detection)
    - SYN Flood Detection (100% detection)
@@ -278,7 +278,7 @@ Follow these steps during project evaluation or laboratory demonstration:
 1. In the sidebar, click **Forensic Reports**.
 2. Locate any incident and click **PDF Download**.
 3. Open the downloaded PDF in your viewer.
-4. Review the professional document: lab headers, executive summary, detection thresholds, evidence SHA-256 digest, correlated timeline, and forensic signature attestation block.
+4. Review the report: neutral headers, executive summary, detection thresholds, evidence SHA-256 digest, correlated timeline, and forensic signature attestation block.
 
 ### Step 5: NS-2 Simulation Trace Analysis
 1. In the sidebar, click **NS-2 Simulation**.
@@ -308,7 +308,7 @@ OK
 
 ## 10. Technical Limitations & Notes
 
-1. **Academic Scope:** This platform is engineered for university lab evaluation and cybersecurity education adhering to digital evidence handling principles (ISO/IEC 27037). It is not a legally certified judicial forensic platform.
+1. **Scope:** This platform supports network incident analysis and digital evidence handling based on ISO/IEC 27037 principles. It is not a legally certified forensic platform.
 2. **Handshake Estimation in One-Way PCAPs:** Estimating TCP three-way handshake completion ($\frac{\text{ACK}}{\text{SYN}}$) assumes bidirectional capture. If an ingested PCAP contains only ingress packets, zero handshakes will be visible.
 3. **Payload Privacy:** In accordance with modern digital forensic privacy standards, application payload bytes are stripped at capture time; all detections operate strictly on network and transport layer headers.
 4. **Localhost Restriction:** All attack simulations are hardcoded to `127.0.0.1` and will never target external or public network entities.

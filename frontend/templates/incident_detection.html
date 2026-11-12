@@ -200,7 +200,7 @@
       <input type="hidden" id="modal-incident-id">
       <div class="form-group">
         <label class="form-label">Analyst Name</label>
-        <input type="text" class="form-control" id="modal-note-author" value="Devesh (Member 2 - Lead Analyst)">
+        <input type="text" class="form-control" id="modal-note-author" value="Forensic Analyst">
       </div>
       <div class="form-group">
         <label class="form-label">Forensic Observation & Analysis Note</label>
@@ -234,7 +234,7 @@
           <strong style="color: var(--severity-high);">B. TCP SYN Flood Detection (RULE-02-SYN-FLOOD)</strong>
           <p style="color: var(--text-muted); margin-top: 4px;">
             Triggers when incoming SYN traffic exceeds {{ settings.syn_flood_threshold_pps or 100 }} packets/second and the handshake completion ratio (ACK/SYN) remains below {{ (settings.syn_flood_ratio_threshold|float * 100)|round|int if settings.syn_flood_ratio_threshold else 10 }}%.
-            <br/><em>Academic Limitation Note: Incomplete PCAP traces without reverse path traffic will observe 0% handshakes; bidirectional monitoring is required for definitive estimation.</em>
+            <br/><em>Technical Note: Incomplete PCAP traces without reverse path traffic will observe 0% handshakes; bidirectional monitoring is required for definitive estimation.</em>
           </p>
         </div>
 

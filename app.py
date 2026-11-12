@@ -437,7 +437,7 @@ def api_add_incident_note(incident_id):
 @app.route("/api/evidence/<evidence_id>/verify", methods=["POST"])
 def api_verify_evidence(evidence_id):
     data = request.get_json(silent=True) or {}
-    verifier = data.get("verifier", "Forensic Examiner (Team JIIT)")
+    verifier = data.get("verifier", "Forensic Analyst")
     try:
         res = EvidenceVaultService.verify_evidence_integrity(evidence_id, verifier)
         return jsonify({"success": True, "result": res})
@@ -527,7 +527,7 @@ def api_ns2_upload_trace():
 @app.route("/api/reports/generate/<incident_id>", methods=["POST"])
 def api_generate_report(incident_id):
     data = request.get_json(silent=True) or {}
-    generated_by = data.get("examiner", "Lead Forensic Examiner (Team JIIT)")
+    generated_by = data.get("examiner", "Lead Forensic Analyst")
     try:
         report_info = ForensicReportGenerator.create_report_for_incident(incident_id, generated_by)
         return jsonify({"success": True, "report": report_info})

@@ -94,7 +94,7 @@ class DetectionEngine:
                 alert["rule_name"],
                 alert.get("threshold_details"),
                 "New",
-                "Forensic Analyst (Team JIIT)",
+                "Forensic Analyst",
                 is_demo
             ))
 

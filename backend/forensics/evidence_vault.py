@@ -109,7 +109,7 @@ class EvidenceVaultService:
         }
 
     @classmethod
-    def verify_evidence_integrity(cls, evidence_id, verifier="Forensic Analyst (Team JIIT)"):
+    def verify_evidence_integrity(cls, evidence_id, verifier="Forensic Analyst"):
         """
         Recalculates file SHA-256 hash and compares with baseline hash.
         Flags TAMPER DETECTED if hash differs.
@@ -183,7 +183,7 @@ class EvidenceVaultService:
     @classmethod
     def simulate_tampering_for_demo(cls, evidence_id):
         """
-        Academic Demonstration Tool:
+        Demonstration Tool:
         Intentionally flips 1 byte in a preserved evidence file to demonstrate
         how the cryptographic integrity verification immediately detects tampering.
         """

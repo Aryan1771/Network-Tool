@@ -1,5 +1,4 @@
 # ==============================================================================
-# JIIT Computer Networks Lab (24B15CS313)
 # Scenario 3: Packet Loss and Network Degradation Simulation
 # Architecture: Source (n0), Lossy Link (n1-n2), Destination (n3)
 # ==============================================================================

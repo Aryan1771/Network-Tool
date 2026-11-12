@@ -1,4 +1,5 @@
 import os
+import secrets
 from pathlib import Path
 
 # Base Paths
@@ -14,7 +15,9 @@ for folder in [DATA_DIR, EVIDENCE_DIR, REPORTS_DIR, UPLOADS_DIR]:
     folder.mkdir(parents=True, exist_ok=True)
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "jiit-cn-lab-forensic-secret-key-2026")
+    # Use the deployment secret when configured; otherwise create an unpredictable
+    # process-local key so local startup never relies on a hardcoded secret.
+    SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
     DATABASE_PATH = str(DB_PATH)
     EVIDENCE_PATH = str(EVIDENCE_DIR)
     REPORTS_PATH = str(REPORTS_DIR)

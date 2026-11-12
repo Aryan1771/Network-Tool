@@ -1,5 +1,4 @@
 # ==============================================================================
-# JIIT Computer Networks Lab (24B15CS313)
 # Scenario 2: High-Rate Flooding / Denial-of-Service Simulation
 # Architecture: Adversary (n0), Victim Server (n3) via Bottleneck Gateway (n1, n2)
 # ==============================================================================

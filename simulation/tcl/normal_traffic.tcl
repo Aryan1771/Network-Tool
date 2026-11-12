@@ -1,5 +1,4 @@
 # ==============================================================================
-# JIIT Computer Networks Lab (24B15CS313)
 # Scenario 1: Baseline Normal Network Traffic Simulation
 # Architecture: 4 Nodes (Client n0, Router n1, Switch n2, Server n3)
 # ==============================================================================

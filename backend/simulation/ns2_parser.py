@@ -154,7 +154,7 @@ class NS2TraceAnalyzer:
     @classmethod
     def generate_sample_trace(cls, target_path, scenario="normal"):
         """
-        Synthesizes a realistic standard NS-2 trace file for lab demonstrations
+        Synthesizes a realistic standard NS-2 trace file for local demonstrations
         when running on systems without a native NS-2 installation.
         """
         import random

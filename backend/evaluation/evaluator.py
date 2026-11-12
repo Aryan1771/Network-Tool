@@ -314,7 +314,7 @@ class EvaluationFramework:
     @classmethod
     def seed_demo_data(cls):
         """
-        Creates a realistic, comprehensive lab demonstration environment.
+        Creates a realistic, comprehensive demonstration environment.
         Seeds all 4 incident types with correlated packets, timelines, preserved PCAP evidence,
         SHA-256 hashes, chain of custody logs, and sample NS-2 traces.
         Strictly labels entries with is_demo = 1.
@@ -331,7 +331,7 @@ class EvaluationFramework:
             INSERT INTO capture_sessions (
                 id, session_name, source_type, status, is_demo
             ) VALUES (?, ?, ?, ?, ?)
-        """, (session_id, "Comprehensive Forensic Lab Demonstration", "simulation", "completed", 1))
+        """, (session_id, "Comprehensive Forensic Demonstration", "simulation", "completed", 1))
 
         # 2. Synthesize packets for all 4 scenarios + normal traffic
         now = time.time()
@@ -396,7 +396,7 @@ class EvaluationFramework:
         # Preserve in Evidence Vault
         evd = EvidenceVaultService.preserve_evidence_file(
             source_path=demo_pcap_path,
-            original_filename="lab_investigation_demo.pcap",
+            original_filename="network_investigation_demo.pcap",
             session_id=session_id,
             collector="Demonstration Simulation Engine",
             source_type="Simulation",
@@ -438,14 +438,14 @@ class EvaluationFramework:
             execute_db("UPDATE evidence SET incident_id = ? WHERE id = ?", (inc_id, evidence_id))
             # Add an analyst note
             DetectionEngine.add_investigation_note(
-                inc_id, "Devesh (Member 2 - Lead Analyst)",
+                inc_id, "Forensic Analyst",
                 "Automated behavioral detection confirmed signature. Traffic metadata preserved in Evidence Vault."
             )
 
         # 6. Generate a forensic PDF report for the first incident
         if detected_incident_ids:
             try:
-                ForensicReportGenerator.create_report_for_incident(detected_incident_ids[0], generated_by="Forensic Team JIIT")
+                ForensicReportGenerator.create_report_for_incident(detected_incident_ids[0], generated_by="Investigation Team")
             except Exception as e:
                 pass
 

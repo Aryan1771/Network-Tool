@@ -5,7 +5,7 @@ class ChainOfCustodyService:
     """
     Forensic Chain of Custody Management Service.
     Enforces append-only immutable-style audit logging adhering to ISO/IEC 27037 standards.
-    Academic implementation disclaimer: Designed for educational demonstration and lab evaluation.
+    Scope: Designed to support evidence handling and audit workflows.
     """
 
     @staticmethod

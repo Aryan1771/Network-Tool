@@ -41,7 +41,7 @@ class NumberedCanvas(canvas.Canvas):
         # Header (pages > 1)
         if self._pageNumber > 1:
             self.drawString(54, 750, "NETWORK INCIDENT INVESTIGATION & DIGITAL FORENSIC REPORT")
-            self.drawRightString(612 - 54, 750, "CONFIDENTIAL / ACADEMIC LAB (JIIT 24B15CS313)")
+            self.drawRightString(612 - 54, 750, "INVESTIGATION REPORT")
             self.setStrokeColor(colors.HexColor("#cbd5e1"))
             self.setLineWidth(0.5)
             self.line(54, 742, 612 - 54, 742)
@@ -50,7 +50,7 @@ class NumberedCanvas(canvas.Canvas):
         self.setStrokeColor(colors.HexColor("#cbd5e1"))
         self.setLineWidth(0.5)
         self.line(54, 45, 612 - 54, 45)
-        self.drawString(54, 32, "JIIT Computer Networks Lab (24B15CS313) - Automated Forensic System")
+        self.drawString(54, 32, "Network Incident Investigation System")
         self.drawRightString(612 - 54, 32, f"Page {self._pageNumber} of {page_count}")
         self.restoreState()
 
@@ -68,7 +68,7 @@ class ForensicReportGenerator:
         return f"REP-{year}-{count:04d}"
 
     @classmethod
-    def create_report_for_incident(cls, incident_id, generated_by="Forensic Examiner (Team JIIT)"):
+    def create_report_for_incident(cls, incident_id, generated_by="Forensic Analyst"):
         """
         Gathers all related incident data, evidence hashes, timeline, chain-of-custody,
         and generates a downloadable PDF forensic report.
@@ -167,7 +167,7 @@ class ForensicReportGenerator:
 
         # Header Block
         story.append(Paragraph("DIGITAL FORENSIC INVESTIGATION REPORT", title_style))
-        story.append(Paragraph("JAYPEE INSTITUTE OF INFORMATION TECHNOLOGY — COMPUTER NETWORKS LAB (24B15CS313)", subtitle_style))
+        story.append(Paragraph("Network Incident Investigation System", subtitle_style))
         story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#10b981"), spaceAfter=12))
 
         # Meta Summary Table
@@ -321,9 +321,9 @@ class ForensicReportGenerator:
 
         story.append(Spacer(1, 15))
         sig_data = [
-            [Paragraph("<b>Forensic Analyst Signature:</b>", body_style), Paragraph("<b>Laboratory Supervisor Sign-off:</b>", body_style)],
-            [Paragraph("<br/><br/>__________________________________<br/>Team JIIT Forensic Lead", body_style),
-             Paragraph("<br/><br/>__________________________________<br/>JIIT Computer Networks Department", body_style)]
+            [Paragraph("<b>Forensic Analyst Signature:</b>", body_style), Paragraph("<b>Investigation Team Sign-off:</b>", body_style)],
+            [Paragraph("<br/><br/>__________________________________<br/>Forensic Analyst", body_style),
+             Paragraph("<br/><br/>__________________________________<br/>Investigation Team", body_style)]
         ]
         t_sig = Table(sig_data, colWidths=[252, 252])
         t_sig.setStyle(TableStyle([

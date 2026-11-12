@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Network Incident Investigation and Automated Forensic System
-JIIT Computer Networks Lab (24B15CS313)
 
 Launcher Entry Point:
 Initializes database, checks dependencies, seeds demo baseline if empty,
@@ -23,7 +22,7 @@ from app import app
 def main():
     print("=" * 75)
     print("  NETWORK INCIDENT INVESTIGATION & AUTOMATED FORENSIC SYSTEM")
-    print("  JIIT Computer Networks Lab (24B15CS313) | Academic Project 2026")
+    print("  Network Incident Investigation System")
     print("=" * 75)
     
     # Initialize SQLite database

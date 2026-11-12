@@ -10,7 +10,7 @@ class TrafficGenerator:
     """
     Simulated Network Traffic Generator:
     Uses standard Python socket programming (TCP/UDP) strictly restricted to localhost (127.0.0.1).
-    Used for lab demonstrations, testing incident detection algorithms, and forensic evaluation.
+    Used for local demonstrations and testing incident detection algorithms.
     """
 
     HOST = "127.0.0.1"
@@ -71,7 +71,7 @@ class TrafficGenerator:
         udp_port = 9051
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_sock:
             for i in range(count):
-                msg = f"DNS_QUERY: domain-{i}.jiit.local".encode()
+                msg = f"DNS_QUERY: domain-{i}.example.local".encode()
                 udp_sock.sendto(msg, (cls.HOST, udp_port))
                 results.append({"type": "UDP", "status": "Sent", "bytes": len(msg)})
                 time.sleep(0.03)

@@ -1,5 +1,4 @@
 -- Network Incident Investigation and Automated Forensic System Database Schema
--- JIIT Computer Networks Lab (24B15CS313)
 
 CREATE TABLE IF NOT EXISTS capture_sessions (
     id TEXT PRIMARY KEY,
@@ -81,7 +80,7 @@ CREATE TABLE IF NOT EXISTS incidents (
     rule_name TEXT NOT NULL,
     threshold_details TEXT,
     status TEXT DEFAULT 'New', -- 'New', 'Investigating', 'Resolved'
-    analyst_assignee TEXT DEFAULT 'Forensic Analyst (Team JIIT)',
+    analyst_assignee TEXT DEFAULT 'Forensic Analyst',
     is_demo INTEGER DEFAULT 0,
     FOREIGN KEY(session_id) REFERENCES capture_sessions(id) ON DELETE SET NULL
 );
@@ -179,7 +178,7 @@ CREATE TABLE IF NOT EXISTS forensic_reports (
     evidence_id TEXT,
     report_title TEXT NOT NULL,
     generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    generated_by TEXT DEFAULT 'Team JIIT Forensic System',
+    generated_by TEXT DEFAULT 'Forensic Analyst',
     file_path TEXT NOT NULL,
     file_size_bytes INTEGER NOT NULL,
     sha256_hash TEXT NOT NULL,
